@@ -1,0 +1,9 @@
+---
+- vars:
+    filename: test.txt
+  tasks:
+  - name: create test file
+    shell: touch {{filename}}
+    register: touch_result
+    notify:
+    - test_notify
