@@ -29,6 +29,6 @@ func (e *Engine) ExecuteWorkflow(wf Workflow) error {
 	// TODO: read stages and execute them here,
 	// TODO: properly parse the workflow interfaces into structures in the CreateWorkflow() func
 
-	wf.Run()
+	//wf.Run()
 	return nil
 }

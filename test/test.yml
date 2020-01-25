@@ -1,5 +1,6 @@
 ---
-- vars:
+- stage: Blabla... testing workflows
+  vars:
     filename: test.txt
   tasks:
   - name: create test file
@@ -7,3 +8,4 @@
     register: touch_result
     notify:
     - test_notify
+    - assdasdaasd
