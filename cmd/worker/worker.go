@@ -4,9 +4,9 @@ import (
 	"io/ioutil"
 	"log"
 
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/workflow"
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/workflow/modules"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
 )
 
 func main() {
@@ -15,24 +15,24 @@ func main() {
 		log.Fatalf("error: %v", err)
 	}
 
-	// create a global engine object for workflow execution
-	engine := workflow.CreateEngine()
+	// create a global engine object for pipeline execution
+	engine := pipeline.CreateEngine()
 	engine.
 		RegisterExtension(&modules.Shell{}).
 		RegisterExtension(&modules.FFMpeg{})
 
-	// create a new environment for this workflow
+	// create a new environment for this pipeline
 	//var env environment.Environment = &environment.NativeEnvironment{}
 	env, err := environment.MakeDockerEnvironment("alpine:latest")
 	defer env.Close()
 
-	workflow, err := workflow.CreateFromBytes(data)
+	pipeline, err := pipeline.CreateFromBytes(data)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
 
-	// execute workflow on engine
-	err = engine.ExecuteWorkflow(&env, workflow)
+	// execute pipeline on engine
+	err = engine.ExecutePipeline(&env, pipeline)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

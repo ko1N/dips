@@ -3,10 +3,10 @@ package modules
 import (
 	"fmt"
 
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
-// workflow module for shell cmds
+// pipeline module for shell cmds
 
 // Shell -
 type Shell struct{}

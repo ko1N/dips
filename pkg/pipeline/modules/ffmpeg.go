@@ -1,10 +1,10 @@
 package modules
 
 import (
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
-// workflow module for ffmpeg
+// pipeline module for ffmpeg
 
 // FFMpeg -
 type FFMpeg struct{}

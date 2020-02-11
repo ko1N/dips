@@ -1,4 +1,4 @@
-module gitlab.strictlypaste.xyz/ko1n/transcode
+module gitlab.strictlypaste.xyz/ko1n/dips
 
 go 1.13
 

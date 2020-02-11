@@ -1,6 +1,6 @@
-package workflow
+package pipeline
 
-import "gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
+import "gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 
 // Extension -
 type Extension interface {

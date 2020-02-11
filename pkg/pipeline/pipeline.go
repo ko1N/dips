@@ -1,4 +1,4 @@
-package workflow
+package pipeline
 
 import (
 	"errors"
@@ -34,29 +34,29 @@ type Stage struct {
 	Variables []Variable
 }
 
-// Workflow -
-type Workflow struct {
+// Pipeline -
+type Pipeline struct {
 	Stages []Stage
 }
 
-// CreateFromBytes - loads a new workflow instance from a byte array
-func CreateFromBytes(data []byte) (Workflow, error) {
-	// TODO: multifile workflows
+// CreateFromBytes - loads a new pipeline instance from a byte array
+func CreateFromBytes(data []byte) (Pipeline, error) {
+	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
-		return Workflow{}, errors.New("not a valid workflow yaml")
+		return Pipeline{}, errors.New("not a valid pipeline yaml")
 	}
 
 	var script interface{}
 	err := yaml.Unmarshal(data, &script)
 	if err != nil {
-		return Workflow{}, err
+		return Pipeline{}, err
 	}
 
-	return parseWorkflow(script)
+	return parsePipeline(script)
 }
 
-func parseWorkflow(script interface{}) (Workflow, error) {
-	result := Workflow{}
+func parsePipeline(script interface{}) (Pipeline, error) {
+	result := Pipeline{}
 	for _, s := range script.([]interface{}) {
 		stage, err := parseStage(s.(map[interface{}]interface{}))
 		if err != nil {
@@ -187,7 +187,7 @@ func parseCommand(cmd string, args interface{}) (Command, error) {
 
 /*
 // TODO: parseTask() function which returns a struct
-func (w *Workflow) runTask(task map[interface{}]interface{}) {
+func (w *Pipeline) runTask(task map[interface{}]interface{}) {
 	if name, ok := task["name"]; ok {
 		n, err := w.parseString(name.(string))
 		if err != nil {
@@ -206,7 +206,7 @@ func (w *Workflow) runTask(task map[interface{}]interface{}) {
 	}
 }
 
-func (w *Workflow) parseString(str string) (string, error) {
+func (w *Pipeline) parseString(str string) (string, error) {
 	// preprocess template
 	str = strings.ReplaceAll(str, "{{", "{{index .Variables \"")
 	str = strings.ReplaceAll(str, "}}", "\"}}")

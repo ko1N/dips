@@ -1,7 +1,7 @@
-package workflow
+package pipeline
 
 import (
-	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
 // Engine - engine instance
@@ -9,8 +9,8 @@ type Engine struct {
 	Extensions []Extension
 }
 
-// TODO: load/register modules, instantiate executions, run workflows, etc
-// TODO: channels between workflows to execute 'notify' ?
+// TODO: load/register modules, instantiate executions, run pipelines, etc
+// TODO: channels between pipelines to execute 'notify' ?
 
 // CreateEngine - creates a new engine instance
 func CreateEngine() Engine {
@@ -25,13 +25,13 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 	return e
 }
 
-// ExecuteWorkflow - executed the given workflow on the engine
-func (e *Engine) ExecuteWorkflow(env environment.Environment, wf Workflow) error {
+// ExecutePipeline - executed the given pipeline on the engine
+func (e *Engine) ExecutePipeline(env environment.Environment, wf Pipeline) error {
 	// create a channel for communication
-	// + logging for this workflow, then exec it
+	// + logging for this pipeline, then exec it
 
 	// TODO: read stages and execute them here,
-	// TODO: properly parse the workflow interfaces into structures in the CreateWorkflow() func
+	// TODO: properly parse the pipeline interfaces into structures in the CreatePipeline() func
 
 	//wf.Run()
 

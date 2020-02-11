@@ -1,5 +1,5 @@
 ---
-- stage: Blabla... testing workflows
+- stage: Blabla... testing pipelines
   vars:
     filename: test.txt
   tasks:
