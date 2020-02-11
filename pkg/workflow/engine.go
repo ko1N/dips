@@ -1,5 +1,9 @@
 package workflow
 
+import (
+	"gitlab.strictlypaste.xyz/ko1n/transcode/pkg/environment"
+)
+
 // Engine - engine instance
 type Engine struct {
 	Extensions []Extension
@@ -22,7 +26,7 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 }
 
 // ExecuteWorkflow - executed the given workflow on the engine
-func (e *Engine) ExecuteWorkflow(wf Workflow) error {
+func (e *Engine) ExecuteWorkflow(env environment.Environment, wf Workflow) error {
 	// create a channel for communication
 	// + logging for this workflow, then exec it
 
@@ -30,5 +34,23 @@ func (e *Engine) ExecuteWorkflow(wf Workflow) error {
 	// TODO: properly parse the workflow interfaces into structures in the CreateWorkflow() func
 
 	//wf.Run()
+
+	for _, stage := range wf.Stages {
+		for _, task := range stage.Tasks {
+			//fmt.Printf("executing:\n")
+			//fmt.Printf("%v\n", task)
+
+			// TODO: new func?
+			for _, cmd := range task.Command {
+				for _, ext := range e.Extensions {
+					if ext.Command() == cmd.Name {
+						//fmt.Println("executing cmd " + ext.Name())
+						ext.Execute(env, cmd.Arguments)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }

@@ -14,10 +14,16 @@ type Variable struct {
 	Value string
 }
 
+// Command -
+type Command struct {
+	Name      string
+	Arguments []string
+}
+
 // Task -
 type Task struct {
 	Name     string
-	Command  []string
+	Command  []Command
 	Register string   // VariableRef
 	Notify   []string // NotifyRef
 }
@@ -46,15 +52,7 @@ func CreateFromBytes(data []byte) (Workflow, error) {
 		return Workflow{}, err
 	}
 
-	parseWorkflow(script)
-
-	return Workflow{}, nil
-
-	/*return Workflow{
-		Workflow:  workflow,
-		Variables: make(map[interface{}]interface{}),
-	}, nil
-	*/
+	return parseWorkflow(script)
 }
 
 func parseWorkflow(script interface{}) (Workflow, error) {
@@ -124,31 +122,67 @@ func parseTasks(script map[interface{}]interface{}) ([]Task, error) {
 func parseTask(script map[interface{}]interface{}) (Task, error) {
 	result := Task{}
 
-	if name, ok := script["name"]; ok {
-		result.Name = name.(string)
-	}
+	for key, value := range script {
+		switch key.(string) {
+		case "name":
+			result.Name = value.(string)
+			break
 
-	if register, ok := script["register"]; ok {
-		result.Register = register.(string)
-	}
+		case "register":
+			result.Register = value.(string)
+			break
 
-	if notify, ok := script["notify"]; ok {
-		if value, ok := notify.(string); ok {
-			result.Notify = []string{value}
-		} else if list, ok := notify.([]interface{}); ok {
-			for _, value := range list {
-				if str, ok := value.(string); ok {
-					result.Notify = append(result.Notify, str)
-				} else {
-					return result, errors.New("Invalid syntax when parsing \"notify\". Should be a list of strings")
+		case "notify":
+			if val, ok := value.(string); ok {
+				result.Notify = []string{val}
+			} else if list, ok := value.([]interface{}); ok {
+				for _, val := range list {
+					if str, ok := val.(string); ok {
+						result.Notify = append(result.Notify, str)
+					} else {
+						return result, errors.New("Invalid syntax when parsing \"notify\". Should be a string or a list of strings")
+					}
 				}
+			} else {
+				return result, errors.New("Invalid syntax when parsing \"notify\"")
 			}
-		} else {
-			return result, errors.New("Invalid syntax when parsing \"notify\"")
+			break
+
+		default:
+			cmd, err := parseCommand(key.(string), value)
+			if err != nil {
+				return result, err
+			}
+			result.Command = append(result.Command, cmd)
+			break
 		}
 	}
 
 	return result, nil
+}
+
+func parseCommand(cmd string, args interface{}) (Command, error) {
+	if val, ok := args.(string); ok {
+		return Command{
+			Name:      cmd,
+			Arguments: []string{val},
+		}, nil
+	} else if list, ok := args.([]interface{}); ok {
+		var arguments []string
+		for _, val := range list {
+			if str, ok := val.(string); ok {
+				arguments = append(arguments, str)
+			} else {
+				return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\". Should be a string or a list of strings")
+			}
+		}
+		return Command{
+			Name:      cmd,
+			Arguments: arguments,
+		}, nil
+	} else {
+		return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\"")
+	}
 }
 
 /*
