@@ -1,9 +1,11 @@
 package environment
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	log "github.com/inconshreveable/log15"
@@ -94,13 +96,54 @@ func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
 	}
 	defer stream.Close()
 
-	var stdOutBuf bytes.Buffer
-	var stdErrBuf bytes.Buffer
-	_, err = stdcopy.StdCopy(&stdOutBuf, &stdErrBuf, stream.Reader)
+	// create stdout/stderr pipes
+	outpr, outpw := io.Pipe()
+	outsig := make(chan struct{})
+	var outBuf bytes.Buffer
+
+	errpr, errpw := io.Pipe()
+	errsig := make(chan struct{})
+	var errBuf bytes.Buffer
+
+	// track stdout
+	go func() {
+		reader := bufio.NewScanner(outpr)
+		for reader.Scan() {
+			fmt.Println("STDOUT " + reader.Text())
+			outBuf.Write([]byte(reader.Text()))
+			outBuf.Write([]byte("\n"))
+		}
+		outsig <- struct{}{}
+	}()
+
+	// track stderr
+	go func() {
+		reader := bufio.NewScanner(errpr)
+		for reader.Scan() {
+			fmt.Println("STDERR " + reader.Text())
+			errBuf.Write([]byte(reader.Text()))
+			errBuf.Write([]byte("\n"))
+		}
+		errsig <- struct{}{}
+	}()
+
+	// run blocking stdCopy
+	_, err = stdcopy.StdCopy(outpw, errpw, stream.Reader)
+
+	// close the pipes regardless of an error in stdCopy
+	outpw.Close()
+	errpw.Close()
+
+	// check error from stdCopy
 	if err != nil {
 		return ExecutionResult{}, err
 	}
 
+	// synchronize with stdout/stderr tracking
+	<-outsig
+	<-errsig
+
+	// wait for the task to finish and return
 	for {
 		inspect, err := e.cli.ContainerExecInspect(e.ctx, exec.ID)
 		if err != nil {
@@ -110,8 +153,8 @@ func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
 		if !inspect.Running {
 			return ExecutionResult{
 				ExitCode: inspect.ExitCode,
-				StdOut:   stdOutBuf.String(),
-				StdErr:   stdErrBuf.String(),
+				StdOut:   outBuf.String(),
+				StdErr:   errBuf.String(),
 			}, nil
 		}
 

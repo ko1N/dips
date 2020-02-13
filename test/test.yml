@@ -1,21 +1,9 @@
 ---
-- stage: Blabla... testing pipelines
-  vars:
-    filename: test.txt
+- stage: testing install and ffmpeg
   tasks:
-  - name: create first test file in container
-    shell: echo Hello World >> test.txt
-  - name: sdadsasda
-    shell: touch test2.txt
-  - name: create first test file in container
-    shell:
-    - cat test.txt
-    - cat test2.txt
-  - name: create test file
-    shell: touch {{filename}}
-    register: touch_result
-    notify:
-    - test_notify
-    - assdasdaasd
-  - name: hardfail
-    shell: hardfailfastplz
+  - name: install ffmpeg
+    shell: apk add wget ffmpeg
+  - name: download a video
+    shell: wget https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4
+  - name: ffprobe video
+    shell: ffprobe Big_Buck_Bunny_1080_10s_30MB.mp4

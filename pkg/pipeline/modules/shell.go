@@ -36,10 +36,14 @@ func (e *Shell) Execute(pipelog log.Logger, env environment.Environment, cmds []
 		if result.ExitCode == 0 {
 			if result.StdOut != "" {
 				pipelog.Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
+			} else if result.StdErr != "" {
+				pipelog.Info("command result: `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 			}
 		} else {
 			if result.StdErr != "" {
 				pipelog.Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+			} else {
+				pipelog.Info("command failed with code " + strconv.Itoa(result.ExitCode))
 			}
 		}
 	}

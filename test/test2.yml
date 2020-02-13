@@ -1,0 +1,21 @@
+---
+- stage: Blabla... testing pipelines
+  vars:
+    filename: test.txt
+  tasks:
+  - name: create first test file in container
+    shell: echo Hello World >> test.txt
+  - name: sdadsasda
+    shell: touch test2.txt
+  - name: create first test file in container
+    shell:
+    - cat test.txt
+    - cat test2.txt
+  - name: create test file
+    shell: touch {{filename}}
+    register: touch_result
+    notify:
+    - test_notify
+    - assdasdaasd
+  - name: hardfail
+    shell: hardfailfastplz
