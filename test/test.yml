@@ -17,3 +17,5 @@
     notify:
     - test_notify
     - assdasdaasd
+  - name: hardfail
+    shell: hardfailfastplz

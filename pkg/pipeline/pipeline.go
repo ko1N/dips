@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -30,6 +29,7 @@ type Task struct {
 
 // Stage -
 type Stage struct {
+	Name      string
 	Tasks     []Task
 	Variables []Variable
 }
@@ -69,8 +69,10 @@ func parsePipeline(script interface{}) (Pipeline, error) {
 
 func parseStage(script map[interface{}]interface{}) (Stage, error) {
 	if stage, ok := script["stage"]; ok {
-		fmt.Println("Parsing stage" + stage.(string))
-		result := Stage{}
+		//fmt.Println("Parsing stage" + stage.(string))
+		result := Stage{
+			Name: stage.(string),
+		}
 
 		var err error
 		result.Variables, err = parseVariables(script)
@@ -92,7 +94,7 @@ func parseStage(script map[interface{}]interface{}) (Stage, error) {
 func parseVariables(script map[interface{}]interface{}) ([]Variable, error) {
 	var result []Variable
 	if vars, ok := script["vars"]; ok {
-		fmt.Printf("vars:\n%v\n\n", vars)
+		//fmt.Printf("vars:\n%v\n\n", vars)
 		for key, value := range vars.(map[interface{}]interface{}) {
 			result = append(result, Variable{
 				Name:  key.(string),
@@ -108,7 +110,7 @@ func parseTasks(script map[interface{}]interface{}) ([]Task, error) {
 	if tasks, ok := script["tasks"]; ok {
 		//fmt.Printf("tasks:\n%v\n\n", tasks)
 		for _, task := range tasks.([]interface{}) {
-			fmt.Printf("task:\n%v\n\n", task)
+			//fmt.Printf("task:\n%v\n\n", task)
 			_task, err := parseTask(task.(map[interface{}]interface{}))
 			if err != nil {
 				return result, err

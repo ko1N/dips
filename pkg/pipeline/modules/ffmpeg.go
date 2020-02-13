@@ -1,6 +1,8 @@
 package modules
 
 import (
+	log "github.com/inconshreveable/log15"
+
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
@@ -20,6 +22,6 @@ func (e *FFMpeg) Command() string {
 }
 
 // Execute -
-func (e *FFMpeg) Execute(env environment.Environment, cmds []string) error {
+func (e *FFMpeg) Execute(pipelog log.Logger, env environment.Environment, cmds []string) error {
 	return nil
 }

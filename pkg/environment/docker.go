@@ -1,16 +1,17 @@
 package environment
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 	"time"
+
+	log "github.com/inconshreveable/log15"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 )
 
 // implements a dockerized environment
@@ -22,22 +23,24 @@ type DockerEnvironment struct {
 	id  string
 }
 
-// MakeDockerEnvironment -
-func MakeDockerEnvironment(image string) (DockerEnvironment, error) {
+// CreateDockerEnvironment -
+func CreateDockerEnvironment(pipelog log.Logger, image string) (DockerEnvironment, error) {
 	ctx := context.Background()
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		panic(err)
+		pipelog.Crit("unable to create docker environment", err)
+		return DockerEnvironment{}, err
 	}
 
-	reader, err := cli.ImagePull(
+	_, err = cli.ImagePull(
 		ctx,
 		fmt.Sprintf("docker.io/library/%s", image),
 		types.ImagePullOptions{})
 	if err != nil {
-		panic(err)
+		pipelog.Crit("unable to pull docker image `"+image+"`", err)
+		return DockerEnvironment{}, err
 	}
-	io.Copy(os.Stdout, reader)
+	//io.Copy(os.Stdout, reader)
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: "alpine",
@@ -45,11 +48,13 @@ func MakeDockerEnvironment(image string) (DockerEnvironment, error) {
 		Tty:   true,
 	}, nil, nil, "")
 	if err != nil {
-		panic(err)
+		pipelog.Crit("unable to create container with image `"+image+"`", err)
+		return DockerEnvironment{}, err
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		pipelog.Crit("unable to start container with image `"+image+"`", err)
+		return DockerEnvironment{}, err
 	}
 
 	return DockerEnvironment{
@@ -60,32 +65,58 @@ func MakeDockerEnvironment(image string) (DockerEnvironment, error) {
 }
 
 // Execute - executes the given cmd inside a docker container
-func (e *DockerEnvironment) Execute(cmd []string) (string, error) {
-	fmt.Printf("exec: '%s'\n", strings.Join(cmd, " "))
+func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
+	//fmt.Printf("exec: '%s'\n", strings.Join(cmd, " "))
 
 	cfg := types.ExecConfig{
+		Detach:       false,
+		Tty:          false,
 		AttachStdin:  false,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          cmd,
+		User:         "root", // TODO: make configurable
 	}
 
 	exec, err := e.cli.ContainerExecCreate(e.ctx, e.id, cfg)
 	if err != nil {
-		return "", err
+		return ExecutionResult{}, err
 	}
-	resp, err := e.cli.ContainerExecAttach(
+	stream, err := e.cli.ContainerExecAttach(
 		e.ctx,
 		exec.ID,
-		cfg,
+		types.ExecConfig{
+			Tty: false,
+		},
 	)
 	if err != nil {
-		return "", err
+		return ExecutionResult{}, err
 	}
-	defer resp.Close()
+	defer stream.Close()
 
-	buf, _, _ := resp.Reader.ReadLine()
-	return strings.TrimSpace(string(buf)), nil
+	var stdOutBuf bytes.Buffer
+	var stdErrBuf bytes.Buffer
+	_, err = stdcopy.StdCopy(&stdOutBuf, &stdErrBuf, stream.Reader)
+	if err != nil {
+		return ExecutionResult{}, err
+	}
+
+	for {
+		inspect, err := e.cli.ContainerExecInspect(e.ctx, exec.ID)
+		if err != nil {
+			return ExecutionResult{}, err
+		}
+
+		if !inspect.Running {
+			return ExecutionResult{
+				ExitCode: inspect.ExitCode,
+				StdOut:   stdOutBuf.String(),
+				StdErr:   stdErrBuf.String(),
+			}, nil
+		}
+
+		time.Sleep(time.Second)
+	}
 }
 
 // Close - shuts down the environment and the corresponding container

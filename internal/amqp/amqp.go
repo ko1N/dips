@@ -95,7 +95,7 @@ func connect(addr string) {
 		}
 		defer conn.Close()
 
-		notify := conn.NotifyClose(make(chan *amqp.Error))
+		notify := conn.NotifyClose(make(chan *amqp.Error, 10))
 
 		ch, err := conn.Channel()
 		if err != nil {

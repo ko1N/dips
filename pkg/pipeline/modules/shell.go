@@ -1,7 +1,10 @@
 package modules
 
 import (
-	"fmt"
+	"strconv"
+	"strings"
+
+	log "github.com/inconshreveable/log15"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
@@ -22,13 +25,23 @@ func (e *Shell) Command() string {
 }
 
 // Execute - Executes the set of commands as shell commands in the environment
-func (e *Shell) Execute(env environment.Environment, cmds []string) error {
+func (e *Shell) Execute(pipelog log.Logger, env environment.Environment, cmds []string) error {
 	for _, cmd := range cmds {
-		buf, err := env.Execute(append([]string{}, "/bin/sh", "-c", cmd))
+		pipelog.Info("executing command `" + cmd + "`")
+		result, err := env.Execute(append([]string{}, "/bin/sh", "-c", cmd))
 		if err != nil {
 			return err
 		}
-		fmt.Println("result: " + buf)
+
+		if result.ExitCode == 0 {
+			if result.StdOut != "" {
+				pipelog.Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
+			}
+		} else {
+			if result.StdErr != "" {
+				pipelog.Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+			}
+		}
 	}
 	return nil
 }

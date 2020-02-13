@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	log "github.com/inconshreveable/log15"
+
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
@@ -26,7 +28,7 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 }
 
 // ExecutePipeline - executed the given pipeline on the engine
-func (e *Engine) ExecutePipeline(env environment.Environment, wf Pipeline) error {
+func (e *Engine) ExecutePipeline(pipelog log.Logger, env environment.Environment, wf Pipeline) error {
 	// create a channel for communication
 	// + logging for this pipeline, then exec it
 
@@ -45,7 +47,7 @@ func (e *Engine) ExecutePipeline(env environment.Environment, wf Pipeline) error
 				for _, ext := range e.Extensions {
 					if ext.Command() == cmd.Name {
 						//fmt.Println("executing cmd " + ext.Name())
-						ext.Execute(env, cmd.Arguments)
+						ext.Execute(pipelog, env, cmd.Arguments)
 					}
 				}
 			}
