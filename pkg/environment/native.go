@@ -94,13 +94,14 @@ func (e *NativeEnvironment) Execute(cmd []string, stdout func(string), stderr fu
 
 	// wait for exc to finish
 	err = exc.Wait()
-	if err != nil {
-		return ExecutionResult{}, err
-	}
 
 	// synchropnize with stdout/stderr
 	<-outsig
 	<-errsig
+
+	if err != nil {
+		return ExecutionResult{}, err
+	}
 
 	return ExecutionResult{
 		ExitCode: exc.ProcessState.ExitCode(),

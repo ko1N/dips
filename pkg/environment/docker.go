@@ -143,14 +143,14 @@ func (e *DockerEnvironment) Execute(cmd []string, stdout func(string), stderr fu
 	outpw.Close()
 	errpw.Close()
 
+	// synchronize with stdout/stderr tracking
+	<-outsig
+	<-errsig
+
 	// check error from stdCopy
 	if err != nil {
 		return ExecutionResult{}, err
 	}
-
-	// synchronize with stdout/stderr tracking
-	<-outsig
-	<-errsig
 
 	// wait for the task to finish and return
 	for {
