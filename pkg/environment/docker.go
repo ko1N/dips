@@ -67,7 +67,7 @@ func CreateDockerEnvironment(pipelog log.Logger, image string) (DockerEnvironmen
 }
 
 // Execute - executes the given cmd inside a docker container
-func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
+func (e *DockerEnvironment) Execute(cmd []string, stdout func(string), stderr func(string)) (ExecutionResult, error) {
 	//fmt.Printf("exec: '%s'\n", strings.Join(cmd, " "))
 
 	cfg := types.ExecConfig{
@@ -109,7 +109,9 @@ func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
 	go func() {
 		reader := bufio.NewScanner(outpr)
 		for reader.Scan() {
-			fmt.Println("STDOUT " + reader.Text())
+			if stdout != nil {
+				stdout(reader.Text())
+			}
 			outBuf.Write([]byte(reader.Text()))
 			outBuf.Write([]byte("\n"))
 		}
@@ -120,7 +122,9 @@ func (e *DockerEnvironment) Execute(cmd []string) (ExecutionResult, error) {
 	go func() {
 		reader := bufio.NewScanner(errpr)
 		for reader.Scan() {
-			fmt.Println("STDERR " + reader.Text())
+			if stderr != nil {
+				stderr(reader.Text())
+			}
 			errBuf.Write([]byte(reader.Text()))
 			errBuf.Write([]byte("\n"))
 		}

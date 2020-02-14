@@ -6,7 +6,7 @@ package environment
 type NativeEnvironment struct{}
 
 // Execute -
-func (e *NativeEnvironment) Execute(cmd []string) (string, error) {
+func (e *NativeEnvironment) Execute(cmd []string, stdout func(string), stderr func(string)) (string, error) {
 	//fmt.Printf("executing '%s'\n", strings.Join(cmd, " "))
 	return "", nil
 }

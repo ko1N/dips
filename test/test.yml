@@ -7,3 +7,5 @@
     shell: wget https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4
   - name: ffprobe video
     shell: ffprobe Big_Buck_Bunny_1080_10s_30MB.mp4
+  - name: ffmpeg transcode video
+    ffmpeg: -i Big_Buck_Bunny_1080_10s_30MB.mp4 -f null -

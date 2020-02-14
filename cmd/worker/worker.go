@@ -33,6 +33,10 @@ func main() {
 	// create a new environment for this pipeline
 	//var env environment.Environment = &environment.NativeEnvironment{}
 	env, err := environment.CreateDockerEnvironment(pipelog, "alpine:latest")
+	if err != nil {
+		pipelog.Info("unable to start docker environment", err)
+		return
+	}
 	defer env.Close()
 
 	pipeline, err := pipeline.CreateFromBytes(data)

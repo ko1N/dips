@@ -28,7 +28,7 @@ func (e *Shell) Command() string {
 func (e *Shell) Execute(pipelog log.Logger, env environment.Environment, cmds []string) error {
 	for _, cmd := range cmds {
 		pipelog.Info("executing command `" + cmd + "`")
-		result, err := env.Execute(append([]string{}, "/bin/sh", "-c", cmd))
+		result, err := env.Execute(append([]string{}, "/bin/sh", "-c", cmd), nil, nil)
 		if err != nil {
 			return err
 		}
@@ -47,5 +47,6 @@ func (e *Shell) Execute(pipelog log.Logger, env environment.Environment, cmds []
 			}
 		}
 	}
+
 	return nil
 }
