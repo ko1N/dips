@@ -9,6 +9,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
