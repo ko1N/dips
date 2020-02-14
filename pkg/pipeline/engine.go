@@ -38,11 +38,12 @@ func (e *Engine) ExecutePipeline(pipelog log.Logger, env environment.Environment
 	//wf.Run()
 
 	for _, stage := range wf.Stages {
-		for _, task := range stage.Tasks {
-			//fmt.Printf("executing:\n")
-			//fmt.Printf("%v\n", task)
+		pipelog.Info("------ Performing Stage: " + stage.Name)
 
-			// TODO: new func?
+		for _, task := range stage.Tasks {
+			pipelog.Info("--- Executing Task: " + task.Name)
+
+			// TODO: new func + throw error if command was not found!
 			for _, cmd := range task.Command {
 				for _, ext := range e.Extensions {
 					if ext.Command() == cmd.Name {

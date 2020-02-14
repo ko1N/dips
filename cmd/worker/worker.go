@@ -24,6 +24,7 @@ func main() {
 	engine := pipeline.CreateEngine()
 	engine.
 		RegisterExtension(&modules.Shell{}).
+		RegisterExtension(&modules.WGet{}).
 		RegisterExtension(&modules.FFMpeg{})
 
 	// create logging instance for this pipeline
