@@ -9,5 +9,7 @@ type ExecutionResult struct {
 
 // Environment -
 type Environment interface {
+	Name() string
 	Execute([]string, func(string), func(string)) (ExecutionResult, error)
+	Close()
 }

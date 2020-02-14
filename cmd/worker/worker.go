@@ -3,7 +3,6 @@ package main
 import (
 	"io/ioutil"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
 
@@ -31,15 +30,7 @@ func main() {
 	pipelog := srvlog.New("pipeline", "test.yml") // TODO: generate ID
 	pipelog.Info("pipeline created")
 
-	// create a new environment for this pipeline
-	//env, err := environment.CreateDockerEnvironment(pipelog, "alpine:latest")
-	env, err := environment.CreateNativeEnvironment(pipelog)
-	if err != nil {
-		pipelog.Info("unable to start environment", err)
-		return
-	}
-	defer env.Close()
-
+	// parse pipeline script
 	pipeline, err := pipeline.CreateFromBytes(data)
 	if err != nil {
 		pipelog.Info("unable to parse pipeline file", err)
@@ -47,7 +38,7 @@ func main() {
 	}
 
 	// execute pipeline on engine
-	err = engine.ExecutePipeline(pipelog, &env, pipeline)
+	err = engine.ExecutePipeline(pipelog, pipeline)
 	if err != nil {
 		pipelog.Info("unable to execute pipeline", err)
 		return

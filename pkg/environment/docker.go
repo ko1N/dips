@@ -66,6 +66,11 @@ func CreateDockerEnvironment(pipelog log.Logger, image string) (DockerEnvironmen
 	}, nil
 }
 
+// Name - returns the name of the docker environment
+func (e *DockerEnvironment) Name() string {
+	return "docker"
+}
+
 // Execute - executes the given cmd inside a docker container
 func (e *DockerEnvironment) Execute(cmd []string, stdout func(string), stderr func(string)) (ExecutionResult, error) {
 	//fmt.Printf("exec: '%s'\n", strings.Join(cmd, " "))

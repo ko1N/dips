@@ -31,6 +31,11 @@ func CreateNativeEnvironment(pipelog log.Logger) (NativeEnvironment, error) {
 	}, nil
 }
 
+// Name - returns the name of the native environment
+func (e *NativeEnvironment) Name() string {
+	return "native"
+}
+
 // Execute -
 func (e *NativeEnvironment) Execute(cmd []string, stdout func(string), stderr func(string)) (ExecutionResult, error) {
 	//fmt.Printf("exec: '%s'\n", strings.Join(cmd, " "))

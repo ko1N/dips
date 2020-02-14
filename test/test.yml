@@ -1,5 +1,6 @@
 ---
 - stage: testing install and ffmpeg
+  environment: docker/alpine:latest
   tasks:
   - name: install ffmpeg
     shell: apk add wget ffmpeg
