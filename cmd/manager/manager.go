@@ -34,7 +34,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	rest.CreateManagerAPI(r)
+	rest.CreateManagerAPI(r, "rabbitmq:rabbitmq@localhost")
 
 	// add swagger documentation on local dev builds
 	mode := os.Getenv("GIN_MODE")

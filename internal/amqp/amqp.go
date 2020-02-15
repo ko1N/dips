@@ -8,11 +8,78 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// Produce - map of producing channels
-var Produce map[string]chan string
+// Client - Simple AMQP Client wrapper
+type Client struct {
+	server    string
+	producers map[string]chan string
+	consumers map[string]chan string
+	signal    chan struct{}
+}
 
-// Consume - map of consuming channels
-var Consume map[string]chan string
+// Create - will create a new AMQP Client object
+func Create(server string) Client {
+	return Client{
+		server:    server,
+		producers: make(map[string]chan string),
+		consumers: make(map[string]chan string),
+	}
+}
+
+// RegisterProducer - creates a new producer channel and returns it
+func (c *Client) RegisterProducer(name string) chan string {
+	chn := make(chan string)
+	c.producers[name] = chn
+	return chn
+}
+
+// RegisterConsumer - creates a new consumer channel and returns it
+func (c *Client) RegisterConsumer(name string) chan string {
+	chn := make(chan string)
+	c.consumers[name] = chn
+	return chn
+}
+
+// Start - spawns a client in a new goroutine
+func (c *Client) Start() {
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+
+			fmt.Println("[AMQP] trying to connect to " + c.server)
+			conn, err := amqp.Dial("amqp://" + c.server)
+			if err != nil {
+				log.Println("[AMQP] Failed to connect")
+				continue
+			}
+			defer conn.Close()
+
+			notify := conn.NotifyClose(make(chan *amqp.Error, 10))
+
+			ch, err := conn.Channel()
+			if err != nil {
+				log.Println("[AMQP] Failed to open channel")
+				continue
+			}
+			defer ch.Close()
+
+			err = c.declareProducers(ch)
+			if err != nil {
+				log.Println("[AMQP] Failed to declare producer queues")
+				continue
+			}
+
+			err = c.declareConsumers(ch)
+			if err != nil {
+				log.Println("[AMQP] Failed to declare consumer queues")
+				continue
+			}
+
+			// TODO: lazily create producers/consumers here
+
+			err = <-notify
+		}
+	}()
+}
 
 func handleProducer(ch *amqp.Channel, q amqp.Queue, goch chan string) {
 	for {
@@ -35,8 +102,8 @@ func handleProducer(ch *amqp.Channel, q amqp.Queue, goch chan string) {
 	}
 }
 
-func declareProducers(ch *amqp.Channel) error {
-	for key := range Produce {
+func (c *Client) declareProducers(ch *amqp.Channel) error {
+	for key := range c.producers {
 		queue, err := ch.QueueDeclare(
 			key,
 			true,
@@ -47,7 +114,7 @@ func declareProducers(ch *amqp.Channel) error {
 		if err != nil {
 			return err
 		}
-		go handleProducer(ch, queue, Produce[key])
+		go handleProducer(ch, queue, c.producers[key])
 	}
 	return nil
 }
@@ -58,8 +125,8 @@ func handleConsumer(queue <-chan amqp.Delivery, goch chan string) {
 	}
 }
 
-func declareConsumers(ch *amqp.Channel) error {
-	for key := range Consume {
+func (c *Client) declareConsumers(ch *amqp.Channel) error {
+	for key := range c.consumers {
 		_, err := ch.QueueDeclare(
 			key,
 			true,
@@ -78,56 +145,7 @@ func declareConsumers(ch *amqp.Channel) error {
 			false,
 			false,
 			nil)
-		go handleConsumer(queue, Consume[key])
+		go handleConsumer(queue, c.consumers[key])
 	}
 	return nil
-}
-
-// connect - initializes and starts up the amqp client
-func connect(addr string) {
-	for {
-		time.Sleep(1 * time.Second)
-
-		conn, err := amqp.Dial("amqp://" + addr)
-		if err != nil {
-			log.Println("[AMQP] Failed to connect")
-			continue
-		}
-		defer conn.Close()
-
-		notify := conn.NotifyClose(make(chan *amqp.Error, 10))
-
-		ch, err := conn.Channel()
-		if err != nil {
-			log.Println("[AMQP] Failed to open channel")
-			continue
-		}
-		defer ch.Close()
-
-		err = declareProducers(ch)
-		if err != nil {
-			log.Println("[AMQP] Failed to declare producer queues")
-			continue
-		}
-
-		err = declareConsumers(ch)
-		if err != nil {
-			log.Println("[AMQP] Failed to declare consumer queues")
-			continue
-		}
-
-		err = <-notify
-	}
-}
-
-// Setup - sets up the amqp producers and consumers
-func Setup(addr string) {
-	Produce = make(map[string]chan string)
-	Consume = make(map[string]chan string)
-	Produce["ingest_job"] = make(chan string)
-	Produce["export_job"] = make(chan string)
-	Consume["ingest_status"] = make(chan string)
-	Consume["export_status"] = make(chan string)
-
-	go connect(addr)
 }
