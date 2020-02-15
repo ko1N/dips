@@ -1,0 +1,20 @@
+basePath: /
+info:
+  contact: {}
+  description: DIPS Manager API
+  license: {}
+  title: DIPS
+  version: "0.1"
+paths:
+  /pipeline/execute:
+    post:
+      consumes:
+      - text/plain
+      description: This method will execute the pipeline sent via the post body
+      operationId: execute-pipeline
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: executes a pipeline
+swagger: "2.0"

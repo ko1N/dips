@@ -13,9 +13,9 @@ func main() {
 	// create global logger for this instance
 	srvlog := log.New("cmd", "worker")
 
-	data, err := ioutil.ReadFile("../../test/test.yml")
+	data, err := ioutil.ReadFile("../../test/test.pipe")
 	if err != nil {
-		srvlog.Crit("unable to open test.yml")
+		srvlog.Crit("unable to open test.pipe")
 		return
 	}
 
@@ -27,7 +27,7 @@ func main() {
 		RegisterExtension(&modules.FFMpeg{})
 
 	// create logging instance for this pipeline
-	pipelog := srvlog.New("pipeline", "test.yml") // TODO: generate ID
+	pipelog := srvlog.New("pipeline", "test.pipe") // TODO: generate ID
 	pipelog.Info("pipeline created")
 
 	// parse pipeline script
@@ -43,6 +43,4 @@ func main() {
 		pipelog.Info("unable to execute pipeline", err)
 		return
 	}
-
-	// ...
 }

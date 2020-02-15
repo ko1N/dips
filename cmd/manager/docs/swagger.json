@@ -1,0 +1,29 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "DIPS Manager API",
+        "title": "DIPS",
+        "contact": {},
+        "license": {},
+        "version": "0.1"
+    },
+    "basePath": "/",
+    "paths": {
+        "/pipeline/execute": {
+            "post": {
+                "description": "This method will execute the pipeline sent via the post body",
+                "consumes": [
+                    "text/plain"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "executes a pipeline",
+                "operationId": "execute-pipeline",
+                "responses": {
+                    "200": {}
+                }
+            }
+        }
+    }
+}

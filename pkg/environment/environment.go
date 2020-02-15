@@ -11,5 +11,8 @@ type ExecutionResult struct {
 type Environment interface {
 	Name() string
 	Execute([]string, func(string), func(string)) (ExecutionResult, error)
+
+	// TODO: add CopyFrom/CopyTo functions to copy from/to the environment
+
 	Close()
 }
