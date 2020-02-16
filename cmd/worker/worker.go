@@ -13,6 +13,8 @@ import (
 var recvPipelineExecute chan string
 var sendPipelineStatus chan string
 
+// TODO: send status updates containing log messages
+// TODO: send status updates containing raw cmd exec log
 func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string) {
 	// create logging instance for this pipeline
 	id := uuid.New().String()
@@ -52,6 +54,6 @@ func main() {
 	client.Start()
 
 	for payload := range recvPipelineExecute {
-		go executePipeline(srvlog, &engine, payload)
+		executePipeline(srvlog, &engine, payload)
 	}
 }

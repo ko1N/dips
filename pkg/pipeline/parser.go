@@ -44,7 +44,7 @@ type Pipeline struct {
 func CreateFromBytes(data []byte) (Pipeline, error) {
 	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
-		return Pipeline{}, errors.New("not a valid pipeline yaml")
+		return Pipeline{}, errors.New("not a valid pipeline script. should start with `---`")
 	}
 
 	var script interface{}

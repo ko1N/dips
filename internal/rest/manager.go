@@ -8,9 +8,22 @@ import (
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
+// TODO: this should be self-contained and not have a global state!
+
 // amqp channels
 var sendPipelineExecute chan string
 var recvPipelineStatus chan string
+
+// SuccessResponse - reponse for a successful operation
+type SuccessResponse struct {
+	Status string `json:"status"`
+}
+
+// FailureResponse - response for a failed operation
+type FailureResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
 
 // ExecutePipeline - executes a pipeline
 // @Summary executes a pipeline
@@ -18,14 +31,16 @@ var recvPipelineStatus chan string
 // @ID execute-pipeline
 // @Accept plain
 // @Produce json
-// @Success 200
-// @Router /pipeline/execute [post]
+// @Param pipeline body string true "Pipeline Script"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} FailureResponse
+// @Router /manager/pipeline/execute [post]
 func ExecutePipeline(c *gin.Context) {
 	body, err := c.GetRawData()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "unable to read post body",
-			"error":  err.Error(),
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to read post body",
+			Error:  err.Error(),
 		})
 		return
 	}
@@ -33,9 +48,9 @@ func ExecutePipeline(c *gin.Context) {
 	// pre-validate body
 	_, err = pipeline.CreateFromBytes(body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "unable to parse pipeline",
-			"error":  err.Error(),
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to parse pipeline",
+			Error:  err.Error(),
 		})
 		return
 	}
@@ -43,8 +58,8 @@ func ExecutePipeline(c *gin.Context) {
 	// send pipeline to worker
 	sendPipelineExecute <- string(body)
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "pipeline created",
+	c.JSON(http.StatusOK, SuccessResponse{
+		Status: "pipeline created",
 	})
 }
 

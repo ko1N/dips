@@ -9,7 +9,7 @@
     },
     "basePath": "/",
     "paths": {
-        "/pipeline/execute": {
+        "/manager/pipeline/execute": {
             "post": {
                 "description": "This method will execute the pipeline sent via the post body",
                 "consumes": [
@@ -20,8 +20,51 @@
                 ],
                 "summary": "executes a pipeline",
                 "operationId": "execute-pipeline",
+                "parameters": [
+                    {
+                        "description": "Pipeline Script",
+                        "name": "pipeline",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
-                    "200": {}
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.FailureResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "rest.FailureResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
                 }
             }
         }

@@ -21,7 +21,7 @@ import (
 // @BasePath /
 
 // generate swagger docs
-//go:generate swag init --parseDependency
+//go:generate swag init -g manager.go --parseDependency
 
 func main() {
 	srvlog := log.New("cmd", "manager")
