@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -8,9 +9,11 @@ import (
 	log "github.com/inconshreveable/log15"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/zebresel-com/mongodm"
 
 	// swagger generated docs
-	_ "gitlab.strictlypaste.xyz/ko1n/dips/cmd/manager/docs"
+	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest"
 )
 
@@ -21,10 +24,50 @@ import (
 // @BasePath /
 
 // generate swagger docs
-//go:generate swag init -g manager.go --parseDependency
+//go:generate swag init -g manager.go --parseDependency --output ../../api/manager
+
+// Job - Database struct describing a pipeline job
+type Job struct {
+	mongodm.DocumentBase `json:",inline" bson:",inline"`
+	Pipeline             string `json:"pipeline"  bson:"pipeline" required:"true"`
+}
+
+// some test code
+func createJob(db *mongodm.Connection, pipeline string) {
+	jobModel := db.Model("Job")
+
+	job := &Job{}
+	jobModel.New(job)
+
+	job.Pipeline = pipeline
+
+	job.Save()
+}
 
 func main() {
 	srvlog := log.New("cmd", "manager")
+
+	// parse command line
+	dbLangPtr := flag.String("dblang", "", "selected language")
+	dbHostPtr := flag.String("dbhost", "localhost", "mongodb host")
+	dbName := flag.String("dbname", "dips", "database name")
+	dbUser := flag.String("dbuser", "dips", "database username")
+	dbPass := flag.String("dbpass", "dips", "database password")
+
+	// setup database
+	db, err := persistence.Connect(*dbLangPtr, []string{*dbHostPtr}, *dbName, *dbUser, *dbPass)
+	if err != nil {
+		srvlog.Crit("Database connection could not be established", "error", err)
+		return
+	}
+
+	// registration
+	db.Register(&Job{}, "jobs")
+
+	persistence.CreateCrudWrapper(db, &Job{})
+
+	// test
+	createJob(db, "test123")
 
 	r := gin.Default()
 
