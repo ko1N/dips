@@ -1,0 +1,47 @@
+basePath: /
+definitions:
+  rest.FailureResponse:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  rest.SuccessResponse:
+    properties:
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: DIPS Manager API
+  license: {}
+  title: DIPS
+  version: "0.1"
+paths:
+  /manager/pipeline/execute:
+    post:
+      consumes:
+      - text/plain
+      description: This method will execute the pipeline sent via the post body
+      operationId: execute-pipeline
+      parameters:
+      - description: Pipeline Script
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.FailureResponse'
+      summary: executes a pipeline
+swagger: "2.0"
