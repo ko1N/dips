@@ -54,6 +54,6 @@ func main() {
 	client.Start()
 
 	for payload := range recvPipelineExecute {
-		executePipeline(srvlog, &engine, payload)
+		go executePipeline(srvlog, &engine, payload)
 	}
 }
