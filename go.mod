@@ -3,6 +3,7 @@ module gitlab.strictlypaste.xyz/ko1n/dips
 go 1.13
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
@@ -19,6 +20,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/jessevdk/go-flags v1.4.0
+	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -33,6 +35,6 @@ require (
 	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
 	golang.org/x/tools v0.0.0-20200225195506-12e620e8d675 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.2.8
 )

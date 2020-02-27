@@ -7,29 +7,39 @@ import (
 	"github.com/zebresel-com/mongodm"
 )
 
+// Config - config entry describing a database config
+type Config struct {
+	LanguageFile string   `json:"language_file" toml:"language_file"`
+	Language     string   `json:"language" toml:"language"`
+	Hosts        []string `json:"hosts" toml:"hosts"`
+	Database     string   `json:"database" toml:"database"`
+	Username     string   `json:"username" toml:"username"`
+	Password     string   `json:"password" toml:"password"`
+}
+
 // Connect - opens a connection to mongodb and returns the connection object
-func Connect(lang string, hosts []string, dbname string, username string, password string) (*mongodm.Connection, error) {
+func Connect(conf Config) (*mongodm.Connection, error) {
 	// try parsing a locals file
 	var locals map[string]string
-	if lang != "" {
+	if conf.LanguageFile != "" && conf.Language != "" {
 		// TODO: find a decent opiniated path
-		if file, err := ioutil.ReadFile("locals.json"); err == nil {
+		if file, err := ioutil.ReadFile(conf.LanguageFile); err == nil {
 			var locale map[string]map[string]string
 			err = json.Unmarshal(file, &locale)
 			if err != nil {
 				return nil, err
 			}
 
-			locals = locale[lang]
+			locals = locale[conf.Language]
 		}
 	}
 
 	// connect to mongodb instance
 	dbConfig := &mongodm.Config{
-		DatabaseHosts:    hosts,
-		DatabaseName:     dbname,
-		DatabaseUser:     username,
-		DatabasePassword: password,
+		DatabaseHosts:    conf.Hosts,
+		DatabaseName:     conf.Database,
+		DatabaseUser:     conf.Username,
+		DatabasePassword: conf.Password,
 		Locals:           locals,
 	}
 	return mongodm.Connect(dbConfig)

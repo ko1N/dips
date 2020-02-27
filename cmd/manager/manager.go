@@ -2,18 +2,22 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
+	"github.com/BurntSushi/toml"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	log "github.com/inconshreveable/log15"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/zebresel-com/mongodm"
+	"gopkg.in/mgo.v2/bson"
 
 	// swagger generated docs
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/crud"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest"
 )
 
@@ -26,48 +30,46 @@ import (
 // generate swagger docs
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
-// Job - Database struct describing a pipeline job
-type Job struct {
-	mongodm.DocumentBase `json:",inline" bson:",inline"`
-	Pipeline             string `json:"pipeline"  bson:"pipeline" required:"true"`
-}
+// generate crud wrappers
+//go:generate go run ../../internal/persistence/crud/crud_gen.go -type=model.Job -output  ../../internal/persistence/crud/job.go
 
-// some test code
-func createJob(db *mongodm.Connection, pipeline string) {
-	jobModel := db.Model("Job")
-
-	job := &Job{}
-	jobModel.New(job)
-
-	job.Pipeline = pipeline
-
-	job.Save()
+type config struct {
+	Database persistence.Config `json:"db" toml:"db"`
 }
 
 func main() {
 	srvlog := log.New("cmd", "manager")
 
 	// parse command line
-	dbLangPtr := flag.String("dblang", "", "selected language")
-	dbHostPtr := flag.String("dbhost", "localhost", "mongodb host")
-	dbName := flag.String("dbname", "dips", "database name")
-	dbUser := flag.String("dbuser", "dips", "database username")
-	dbPass := flag.String("dbpass", "dips", "database password")
+	configPtr := flag.String("config", "config.toml", "config file")
+	flag.Parse()
+
+	// parse config
+	var conf config
+	if _, err := toml.DecodeFile(*configPtr, &conf); err != nil {
+		srvlog.Crit("Config file could not be parsed", "error", err)
+		return
+	}
 
 	// setup database
-	db, err := persistence.Connect(*dbLangPtr, []string{*dbHostPtr}, *dbName, *dbUser, *dbPass)
+	db, err := persistence.Connect(conf.Database)
 	if err != nil {
 		srvlog.Crit("Database connection could not be established", "error", err)
 		return
 	}
 
-	// registration
-	db.Register(&Job{}, "jobs")
+	// register models
+	jobs := crud.CreateJobWrapper(db)
+	jobs.Create(&model.Job{
+		Pipeline: "penis123",
+	})
 
-	persistence.CreateCrudWrapper(db, &Job{})
-
-	// test
-	createJob(db, "test123")
+	j, err := jobs.FindOne(bson.M{"pipeline": "penis123"})
+	if err != nil {
+		fmt.Printf("error: %+v\n", err)
+		return
+	}
+	fmt.Printf("val: %+v\n", j)
 
 	r := gin.Default()
 
