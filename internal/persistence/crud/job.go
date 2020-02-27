@@ -25,6 +25,7 @@ func (c *JobWrapper) Create(document *model.Job) error {
 	return document.Save()
 }
 
+// FindOne - finds a single document based on the bson query
 func (c *JobWrapper) FindOne(query ...interface{}) (*model.Job, error) {
 	mdl := c.db.Model("Job")
 	value := &model.Job{}

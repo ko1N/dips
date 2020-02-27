@@ -70,6 +70,7 @@ func (c *{{.TypeName}}Wrapper) Create(document *{{.Type}}) error {
 	return document.Save()
 }
 
+// FindOne - finds a single document based on the bson query
 func (c *{{.TypeName}}Wrapper) FindOne(query ...interface{}) (*{{.Type}}, error) {
 	mdl := c.db.Model("{{.TypeName}}")
 	value := &{{.Type}}{}
