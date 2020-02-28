@@ -1,13 +1,20 @@
 package main
 
 import (
+	"flag"
+
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
 
+	"github.com/BurntSushi/toml"
 	"github.com/google/uuid"
 	log "github.com/inconshreveable/log15"
 )
+
+type config struct {
+	AMQP amqp.Config `json:"amqp" toml:"amqp"`
+}
 
 // amqp channels
 var recvPipelineExecute chan string
@@ -40,6 +47,17 @@ func main() {
 	// create global logger for this instance
 	srvlog := log.New("cmd", "worker")
 
+	// parse command line
+	configPtr := flag.String("config", "config.toml", "config file")
+	flag.Parse()
+
+	// parse config
+	var conf config
+	if _, err := toml.DecodeFile(*configPtr, &conf); err != nil {
+		srvlog.Crit("Config file could not be parsed", "error", err)
+		return
+	}
+
 	// create a global engine object for pipeline execution
 	engine := pipeline.CreateEngine()
 	engine.
@@ -48,7 +66,7 @@ func main() {
 		RegisterExtension(&modules.FFMpeg{})
 
 	// setup amqp
-	client := amqp.Create("rabbitmq:rabbitmq@localhost")
+	client := amqp.Create(conf.AMQP)
 	recvPipelineExecute = client.RegisterConsumer("pipeline_execute")
 	sendPipelineStatus = client.RegisterProducer("pipeline_status")
 	client.Start()

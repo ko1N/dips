@@ -16,6 +16,7 @@ manager:
 - have a set of "predefined" pipelines in pipeline folder
   -> be able to deploy a new pipeline (write pipeline file to folder) or start a pipeline by its filename
 - give each running pipeline a tracking id and send it to a worker
+- list pagination: https://github.com/moehlone/mongodm-example/blob/master/controllers/user.go
 
 "pipeline-ui":
 - easily deployable and configurable pipelines with config system (so users can configure a pipeline and trigger them)
@@ -31,3 +32,4 @@ structure:
 - add /scripts directory for build/install/analysis
 - add /build folder for docker
 - /test should contain additional external test apps and test data
+- create cmd for manual pipeline execution (for development of pipelines)

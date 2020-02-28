@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "DIPS Manager API",
-        "title": "DIPS",
+        "description": "dips manager api",
+        "title": "dips",
         "contact": {},
         "license": {},
         "version": "0.1"
@@ -167,7 +167,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "object"
+                    "type": "string"
                 }
             }
         },

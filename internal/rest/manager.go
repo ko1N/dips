@@ -169,7 +169,7 @@ func JobInfo(c *gin.Context) {
 }
 
 // CreateManagerAPI - adds the manager api to a gin engine
-func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq string) error {
+func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) error {
 	// setup database
 	jobs = crud.CreateJobWrapper(db)
 

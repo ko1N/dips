@@ -40,7 +40,7 @@ definitions:
       error:
         type: string
       status:
-        type: object
+        type: string
     type: object
   rest.JobInfoResponse:
     properties:
@@ -62,9 +62,9 @@ definitions:
     type: object
 info:
   contact: {}
-  description: DIPS Manager API
+  description: dips manager api
   license: {}
-  title: DIPS
+  title: dips
   version: "0.1"
 paths:
   /manager/job/execute:

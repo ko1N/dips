@@ -3,3 +3,6 @@ hosts=["localhost"]
 database="dips"
 username="dips"
 password="dips"
+
+[amqp]
+host="rabbitmq:rabbitmq@localhost"

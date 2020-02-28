@@ -16,10 +16,15 @@ type Client struct {
 	signal    chan struct{}
 }
 
+// Config - config entry describing a amqp config
+type Config struct {
+	Host string `json:"host" toml:"host"`
+}
+
 // Create - will create a new AMQP Client object
-func Create(server string) Client {
+func Create(conf Config) Client {
 	return Client{
-		server:    server,
+		server:    conf.Host,
 		producers: make(map[string]chan string),
 		consumers: make(map[string]chan string),
 	}

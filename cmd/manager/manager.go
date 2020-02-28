@@ -13,13 +13,14 @@ import (
 
 	// swagger generated docs
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest"
 )
 
-// @title DIPS
+// @title dips
 // @version 0.1
-// @description DIPS Manager API
+// @description dips manager api
 
 // @BasePath /
 
@@ -27,10 +28,11 @@ import (
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
 // generate crud wrappers
-//go:generate go run ../../internal/persistence/crud/crud_gen.go -type=model.Job -output  ../../internal/persistence/crud/job.go
+//go:generate go run ../../internal/persistence/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/crud/job.go
 
 type config struct {
 	Database persistence.Config `json:"db" toml:"db"`
+	AMQP     amqp.Config        `json:"amqp" toml:"amqp"`
 }
 
 func main() {
@@ -54,23 +56,7 @@ func main() {
 		return
 	}
 
-	// register models
-	/*
-		jobs := crud.CreateJobWrapper(db)
-		jobs.CreateJob(&model.Job{
-			Pipeline: "penis123",
-		})
-
-		j, err := jobs.FindJob(bson.M{"pipeline": "penis123"})
-		if err != nil {
-			fmt.Printf("error: %+v\n", err)
-			return
-		}
-		fmt.Printf("val: %+v\n", j)
-		j.Pipeline = "penis1234"
-		j.Save()
-	*/
-
+	// setup web service
 	r := gin.Default()
 
 	// add basic cors handling
@@ -79,7 +65,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	rest.CreateManagerAPI(r, db, "rabbitmq:rabbitmq@localhost")
+	rest.CreateManagerAPI(r, db, conf.AMQP)
 
 	// add swagger documentation on local dev builds
 	mode := os.Getenv("GIN_MODE")
