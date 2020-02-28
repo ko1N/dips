@@ -73,28 +73,43 @@ func (c *{{.TypeName}}Wrapper) Create{{.TypeName}}(document *{{.Type}}) error {
 
 // Find{{.TypeName}} - finds a single document based on the bson query
 func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}(query ...interface{}) (*{{.Type}}, error) {
-	mdl := c.db.Model("{{.TypeName}}")
 	value := &{{.Type}}{}
-	err := mdl.FindOne(query...).Exec(value)
+	err := c.Find{{.TypeName}}Query(query...).Exec(value)
 	return value, err
+}
+
+// Find{{.TypeName}}Query - returns a query to find a single document based on the bson query
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}Query(query ...interface{}) *mongodm.Query {
+	mdl := c.db.Model("{{.TypeName}}")
+	return mdl.FindOne(query...)
 }
 
 // Find{{.TypeName}}s - finds a list of documents based on the bson query
 func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}s(query ...interface{}) ([]*{{.Type}}, error) {
-	mdl := c.db.Model("{{.TypeName}}")
 	value := []*{{.Type}}{}
-	err := mdl.Find(query...).Exec(&value)
+	err := c.Find{{.TypeName}}sQuery(query...).Exec(&value)
 	if _, ok := err.(*mongodm.NotFoundError); ok {
 		return value, nil // not found will not result in an error but in an empty list
 	}
 	return value, err
 }
 
+// Find{{.TypeName}}sQuery - finds a list of documents based on the bson query
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}sQuery(query ...interface{}) *mongodm.Query {
+	mdl := c.db.Model("{{.TypeName}}")
+	return mdl.Find(query...)
+}
+
 // Find{{.TypeName}}ByID - finds a single document based on its hex id
 func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}ByID(id string) (*{{.Type}}, error) {
-	mdl := c.db.Model("{{.TypeName}}")
 	value := &{{.Type}}{}
-	err := mdl.FindId(bson.ObjectIdHex(id)).Exec(value)
+	err := c.Find{{.TypeName}}ByIDQuery(id).Exec(value)
 	return value, err
+}
+
+// Find{{.TypeName}}ByIDQuery - finds a single document based on its hex id
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}ByIDQuery(id string) *mongodm.Query {
+	mdl := c.db.Model("{{.TypeName}}")
+	return mdl.FindId(bson.ObjectIdHex(id))
 }
 `

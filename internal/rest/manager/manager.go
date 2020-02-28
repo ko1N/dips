@@ -10,6 +10,7 @@ import (
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/crud"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // TODO: this should be self-contained and not have a global state!
@@ -135,8 +136,10 @@ type JobListResponse struct {
 // @Router /manager/job/list [get]
 func JobList(c *gin.Context) {
 	// TODO: pagination
-
-	jobList, err := jobs.FindJobs()
+	jobList := []*model.Job{}
+	err := jobs.FindJobsQuery().
+		Select(bson.M{"name": true, "progress": true}).
+		Exec(&jobList)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipelines",
@@ -144,7 +147,6 @@ func JobList(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, JobListResponse{
 		Jobs: jobList,
 	})
