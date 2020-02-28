@@ -27,7 +27,6 @@ pipelines:
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
 
 structure:
-- swagger specs should be generated into /api folder
 - /configs for default configs
 - add /scripts directory for build/install/analysis
 - add /build folder for docker

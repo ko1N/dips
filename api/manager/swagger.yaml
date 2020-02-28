@@ -1,11 +1,59 @@
 basePath: /
 definitions:
+  model.Job:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      pipeline:
+        type: string
+      progress:
+        type: integer
+      stages:
+        items:
+          $ref: '#/definitions/model.JobStage'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  model.JobStage:
+    properties:
+      name:
+        type: string
+      progress:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/model.JobStageTask'
+        type: array
+    type: object
+  model.JobStageTask:
+    properties:
+      name:
+        type: string
+      progress:
+        type: integer
+    type: object
   rest.FailureResponse:
     properties:
       error:
         type: string
       status:
-        type: string
+        type: object
+    type: object
+  rest.JobInfoResponse:
+    properties:
+      job:
+        $ref: '#/definitions/model.Job'
+        type: object
+    type: object
+  rest.JobListResponse:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/model.Job'
+        type: array
     type: object
   rest.SuccessResponse:
     properties:
@@ -19,12 +67,12 @@ info:
   title: DIPS
   version: "0.1"
 paths:
-  /manager/pipeline/execute:
+  /manager/job/execute:
     post:
       consumes:
       - text/plain
-      description: This method will execute the pipeline sent via the post body
-      operationId: execute-pipeline
+      description: This method will execute the job sent via the post body
+      operationId: execute-job
       parameters:
       - description: Pipeline Script
         in: body
@@ -43,5 +91,43 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/rest.FailureResponse'
-      summary: executes a pipeline
+      summary: executes a job
+  /manager/job/list:
+    get:
+      description: This method will return a list of all jobs
+      operationId: job-list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.JobListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.FailureResponse'
+      summary: lists all jobs
+  /manager/jobs/info/{:id}:
+    get:
+      description: This method will return a single job by it's id or an error.
+      operationId: pipeline-info
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.JobInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.FailureResponse'
+      summary: find a single job by it's id
 swagger: "2.0"
