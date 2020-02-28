@@ -4,11 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zebresel-com/mongodm"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/crud"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
 // TODO: this should be self-contained and not have a global state!
+
+// database
+var jobs crud.JobWrapper
 
 // amqp channels
 var sendPipelineExecute chan string
@@ -55,6 +61,14 @@ func ExecutePipeline(c *gin.Context) {
 		return
 	}
 
+	// write pipeline to database
+	job := model.Job{
+		Pipeline: string(body),
+	}
+	jobs.CreateJob(&job)
+
+	// use job id
+
 	// send pipeline to worker
 	sendPipelineExecute <- string(body)
 
@@ -64,13 +78,20 @@ func ExecutePipeline(c *gin.Context) {
 }
 
 // CreateManagerAPI - adds the manager api to a gin engine
-func CreateManagerAPI(r *gin.Engine, mq string) error {
+func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq string) error {
+	// setup database
+	jobs = crud.CreateJobWrapper(db)
+
+	// setup amqp
 	client := amqp.Create(mq)
 	sendPipelineExecute = client.RegisterProducer("pipeline_execute")
 	recvPipelineStatus = client.RegisterConsumer("pipeline_status")
 	client.Start()
 
+	// setup rest routes
 	r.POST("/manager/pipeline/execute", ExecutePipeline)
+	// /manager/pipeline/list
+	// /manager/pipeline/info/{id}
 
 	return nil
 }

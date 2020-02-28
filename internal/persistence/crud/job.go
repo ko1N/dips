@@ -3,6 +3,7 @@ package crud
 import (
 	"github.com/zebresel-com/mongodm"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // JobWrapper - Represents a crud wrapper and all required data
@@ -18,17 +19,36 @@ func CreateJobWrapper(db *mongodm.Connection) JobWrapper {
 	}
 }
 
-// Create - creates a new document
-func (c *JobWrapper) Create(document *model.Job) error {
+// CreateJob - creates a new document
+func (c *JobWrapper) CreateJob(document *model.Job) error {
 	mdl := c.db.Model("Job")
 	mdl.New(document)
 	return document.Save()
 }
 
-// FindOne - finds a single document based on the bson query
-func (c *JobWrapper) FindOne(query ...interface{}) (*model.Job, error) {
+// FindJob - finds a single document based on the bson query
+func (c *JobWrapper) FindJob(query ...interface{}) (*model.Job, error) {
 	mdl := c.db.Model("Job")
 	value := &model.Job{}
 	err := mdl.FindOne(query...).Exec(value)
+	return value, err
+}
+
+// FindJobs - finds a list of documents based on the bson query
+func (c *JobWrapper) FindJobs(query ...interface{}) ([]*model.Job, error) {
+	mdl := c.db.Model("Job")
+	value := []*model.Job{}
+	err := mdl.Find(query...).Exec(&value)
+	if _, ok := err.(*mongodm.NotFoundError); ok {
+		return value, nil // not found will not result in an error but in an empty list
+	}
+	return value, err
+}
+
+// FindJobByID - finds a single document based on its hex id
+func (c *JobWrapper) FindJobByID(id string) (*model.Job, error) {
+	mdl := c.db.Model("Job")
+	value := &model.Job{}
+	err := mdl.FindId(bson.ObjectIdHex(id)).Exec(value)
 	return value, err
 }

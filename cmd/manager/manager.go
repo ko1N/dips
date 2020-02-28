@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -11,13 +10,10 @@ import (
 	log "github.com/inconshreveable/log15"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"gopkg.in/mgo.v2/bson"
 
 	// swagger generated docs
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/crud"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest"
 )
 
@@ -59,17 +55,21 @@ func main() {
 	}
 
 	// register models
-	jobs := crud.CreateJobWrapper(db)
-	jobs.Create(&model.Job{
-		Pipeline: "penis123",
-	})
+	/*
+		jobs := crud.CreateJobWrapper(db)
+		jobs.CreateJob(&model.Job{
+			Pipeline: "penis123",
+		})
 
-	j, err := jobs.FindOne(bson.M{"pipeline": "penis123"})
-	if err != nil {
-		fmt.Printf("error: %+v\n", err)
-		return
-	}
-	fmt.Printf("val: %+v\n", j)
+		j, err := jobs.FindJob(bson.M{"pipeline": "penis123"})
+		if err != nil {
+			fmt.Printf("error: %+v\n", err)
+			return
+		}
+		fmt.Printf("val: %+v\n", j)
+		j.Pipeline = "penis1234"
+		j.Save()
+	*/
 
 	r := gin.Default()
 
@@ -79,7 +79,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	rest.CreateManagerAPI(r, "rabbitmq:rabbitmq@localhost")
+	rest.CreateManagerAPI(r, db, "rabbitmq:rabbitmq@localhost")
 
 	// add swagger documentation on local dev builds
 	mode := os.Getenv("GIN_MODE")

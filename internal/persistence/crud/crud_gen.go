@@ -48,6 +48,7 @@ package crud
 import (
 	"github.com/zebresel-com/mongodm"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // {{.TypeName}}Wrapper - Represents a crud wrapper and all required data
@@ -63,18 +64,37 @@ func Create{{.TypeName}}Wrapper(db *mongodm.Connection) {{.TypeName}}Wrapper {
 	}
 }
 
-// Create - creates a new document
-func (c *{{.TypeName}}Wrapper) Create(document *{{.Type}}) error {
+// Create{{.TypeName}} - creates a new document
+func (c *{{.TypeName}}Wrapper) Create{{.TypeName}}(document *{{.Type}}) error {
 	mdl := c.db.Model("{{.TypeName}}")
 	mdl.New(document)
 	return document.Save()
 }
 
-// FindOne - finds a single document based on the bson query
-func (c *{{.TypeName}}Wrapper) FindOne(query ...interface{}) (*{{.Type}}, error) {
+// Find{{.TypeName}} - finds a single document based on the bson query
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}(query ...interface{}) (*{{.Type}}, error) {
 	mdl := c.db.Model("{{.TypeName}}")
 	value := &{{.Type}}{}
 	err := mdl.FindOne(query...).Exec(value)
+	return value, err
+}
+
+// Find{{.TypeName}}s - finds a list of documents based on the bson query
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}s(query ...interface{}) ([]*{{.Type}}, error) {
+	mdl := c.db.Model("{{.TypeName}}")
+	value := []*{{.Type}}{}
+	err := mdl.Find(query...).Exec(&value)
+	if _, ok := err.(*mongodm.NotFoundError); ok {
+		return value, nil // not found will not result in an error but in an empty list
+	}
+	return value, err
+}
+
+// Find{{.TypeName}}ByID - finds a single document based on its hex id
+func (c *{{.TypeName}}Wrapper) Find{{.TypeName}}ByID(id string) (*{{.Type}}, error) {
+	mdl := c.db.Model("{{.TypeName}}")
+	value := &{{.Type}}{}
+	err := mdl.FindId(bson.ObjectIdHex(id)).Exec(value)
 	return value, err
 }
 `

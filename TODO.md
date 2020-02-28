@@ -26,9 +26,6 @@ pipelines:
 - specify required docker registry for the given image (and provide a way to configure credentials in the manager and send them to the workers for each pipeline)
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
 
-database:
-- evaluate cassandra?
-
 structure:
 - swagger specs should be generated into /api folder
 - /configs for default configs
