@@ -7,6 +7,8 @@ worker:
 - config file to allow/disallow environments and modules
 - the pipeline should have a set of default env variables (e.g. container id for docker or env name)
 - config should specify the use of a gpu, pipelines with gpu requirements will be forced on workers with a gpu installed
+- buffer tracking messages before sending them to fast
+- logfile with log rotation
 
 manager:
 - api to paginate/list/start/stop pipelines
@@ -17,6 +19,7 @@ manager:
   -> be able to deploy a new pipeline (write pipeline file to folder) or start a pipeline by its filename
 - give each running pipeline a tracking id and send it to a worker
 - list pagination: https://github.com/moehlone/mongodm-example/blob/master/controllers/user.go
+- store secrets and send them to the worker (e.g. git credentials, docker login, etc)
 
 event-tracking:
 - log messages
