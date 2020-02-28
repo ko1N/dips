@@ -15,7 +15,7 @@ import (
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 )
 
 // @title dips
@@ -65,7 +65,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	rest.CreateManagerAPI(r, db, conf.AMQP)
+	manager.CreateManagerAPI(r, db, conf.AMQP)
 
 	// add swagger documentation on local dev builds
 	mode := os.Getenv("GIN_MODE")

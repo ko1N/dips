@@ -38,46 +38,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.SuccessResponse"
+                            "$ref": "#/definitions/manager.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/rest.FailureResponse"
+                            "$ref": "#/definitions/manager.FailureResponse"
                         }
                     }
                 }
             }
         },
-        "/manager/job/list": {
-            "get": {
-                "description": "This method will return a list of all jobs",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "jobs"
-                ],
-                "summary": "lists all jobs",
-                "operationId": "job-list",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.JobListResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.FailureResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/manager/jobs/info/{job_id}": {
+        "/manager/job/info/{job_id}": {
             "get": {
                 "description": "This method will return a single job by it's id or an error.",
                 "produces": [
@@ -101,13 +74,40 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.JobInfoResponse"
+                            "$ref": "#/definitions/manager.JobInfoResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/rest.FailureResponse"
+                            "$ref": "#/definitions/manager.FailureResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/manager/job/list": {
+            "get": {
+                "description": "This method will return a list of all jobs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "lists all jobs",
+                "operationId": "job-list",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.JobListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/manager.FailureResponse"
                         }
                     }
                 }
@@ -115,6 +115,45 @@
         }
     },
     "definitions": {
+        "manager.FailureResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "manager.JobInfoResponse": {
+            "type": "object",
+            "properties": {
+                "job": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Job"
+                }
+            }
+        },
+        "manager.JobListResponse": {
+            "type": "object",
+            "properties": {
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Job"
+                    }
+                }
+            }
+        },
+        "manager.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Job": {
             "type": "object",
             "properties": {
@@ -123,6 +162,12 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "logs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "pipeline": {
                     "type": "string"
@@ -161,50 +206,26 @@
         "model.JobStageTask": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "progress": {
                     "type": "integer"
-                }
-            }
-        },
-        "rest.FailureResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
                 },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "rest.JobInfoResponse": {
-            "type": "object",
-            "properties": {
-                "job": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.Job"
-                }
-            }
-        },
-        "rest.JobListResponse": {
-            "type": "object",
-            "properties": {
-                "jobs": {
+                "stderr": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.Job"
+                        "type": "string"
                     }
-                }
-            }
-        },
-        "rest.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string"
+                },
+                "stdout": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }

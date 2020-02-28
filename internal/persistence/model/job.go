@@ -12,6 +12,7 @@ type Job struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
 	Pipeline             string      `json:"pipeline" bson:"pipeline" required:"true"`
 	Progress             uint        `json:"progress" bson:"progress"`
+	Logs                 []string    `json:"logs" bson:"logs"`
 	Stages               []*JobStage `json:"stages" bson:"stages"`
 }
 
@@ -24,6 +25,9 @@ type JobStage struct {
 
 // JobStageTask - Database struct describing a stage task
 type JobStageTask struct {
-	Name     string `json:"name" bson:"name" required:"true"`
-	Progress uint   `json:"progress" bson:"progress"`
+	ID       uint     `json:"id" bson:"id" required:"true"`
+	Name     string   `json:"name" bson:"name" required:"true"`
+	Progress uint     `json:"progress" bson:"progress"`
+	StdOut   []string `json:"stdout" bson:"stdout"`
+	StdErr   []string `json:"stderr" bson:"stderr"`
 }

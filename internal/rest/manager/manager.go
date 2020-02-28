@@ -1,6 +1,7 @@
-package rest
+package manager
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,12 @@ var jobs crud.JobWrapper
 // amqp channels
 var sendPipelineExecute chan string
 var recvPipelineStatus chan string
+
+// ExecuteJobMessage - message which will be sent when a pipeline should be executed
+type ExecuteJobMessage struct {
+	ID       string
+	Pipeline string
+}
 
 // SuccessResponse - reponse for a successful operation
 type SuccessResponse struct {
@@ -67,6 +74,7 @@ func ExecuteJob(c *gin.Context) {
 		Pipeline: string(body),
 		Progress: 0,
 	}
+	var taskID uint
 	for _, stage := range pi.Stages {
 		js := model.JobStage{
 			Name:     stage.Name,
@@ -74,9 +82,11 @@ func ExecuteJob(c *gin.Context) {
 		}
 		for _, task := range stage.Tasks {
 			js.Tasks = append(js.Tasks, &model.JobStageTask{
+				ID:       taskID,
 				Name:     task.Name,
 				Progress: 0,
 			})
+			taskID++
 		}
 		job.Stages = append(job.Stages, &js)
 	}
@@ -90,10 +100,19 @@ func ExecuteJob(c *gin.Context) {
 		return
 	}
 
-	// use job id
-
 	// send pipeline to worker
-	sendPipelineExecute <- string(body)
+	msg, err := json.Marshal(ExecuteJobMessage{
+		ID:       job.Id.Hex(),
+		Pipeline: string(body),
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "pipeline could not be created",
+			Error:  err.Error(),
+		})
+		return
+	}
+	sendPipelineExecute <- string(msg)
 
 	c.JSON(http.StatusOK, SuccessResponse{
 		Status: "pipeline created",
@@ -146,7 +165,7 @@ type JobInfoResponse struct {
 // @Param job_id path string true "Job ID"
 // @Success 200 {object} JobInfoResponse
 // @Failure 400 {object} FailureResponse
-// @Router /manager/jobs/info/{job_id} [get]
+// @Router /manager/job/info/{job_id} [get]
 func JobInfo(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -180,6 +199,7 @@ func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) err
 	client := amqp.Create(mq)
 	sendPipelineExecute = client.RegisterProducer("pipeline_execute")
 	recvPipelineStatus = client.RegisterConsumer("pipeline_status")
+	go recvJobStatus()
 	client.Start()
 
 	// setup rest routes

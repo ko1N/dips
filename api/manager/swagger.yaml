@@ -1,11 +1,40 @@
 basePath: /
 definitions:
+  manager.FailureResponse:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  manager.JobInfoResponse:
+    properties:
+      job:
+        $ref: '#/definitions/model.Job'
+        type: object
+    type: object
+  manager.JobListResponse:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/model.Job'
+        type: array
+    type: object
+  manager.SuccessResponse:
+    properties:
+      status:
+        type: string
+    type: object
   model.Job:
     properties:
       createdAt:
         type: string
       id:
         type: string
+      logs:
+        items:
+          type: string
+        type: array
       pipeline:
         type: string
       progress:
@@ -30,35 +59,20 @@ definitions:
     type: object
   model.JobStageTask:
     properties:
+      id:
+        type: integer
       name:
         type: string
       progress:
         type: integer
-    type: object
-  rest.FailureResponse:
-    properties:
-      error:
-        type: string
-      status:
-        type: string
-    type: object
-  rest.JobInfoResponse:
-    properties:
-      job:
-        $ref: '#/definitions/model.Job'
-        type: object
-    type: object
-  rest.JobListResponse:
-    properties:
-      jobs:
+      stderr:
         items:
-          $ref: '#/definitions/model.Job'
+          type: string
         type: array
-    type: object
-  rest.SuccessResponse:
-    properties:
-      status:
-        type: string
+      stdout:
+        items:
+          type: string
+        type: array
     type: object
 info:
   contact: {}
@@ -86,33 +100,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.SuccessResponse'
+            $ref: '#/definitions/manager.SuccessResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/rest.FailureResponse'
+            $ref: '#/definitions/manager.FailureResponse'
       summary: executes a job
       tags:
       - jobs
-  /manager/job/list:
-    get:
-      description: This method will return a list of all jobs
-      operationId: job-list
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/rest.JobListResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/rest.FailureResponse'
-      summary: lists all jobs
-      tags:
-      - jobs
-  /manager/jobs/info/{job_id}:
+  /manager/job/info/{job_id}:
     get:
       description: This method will return a single job by it's id or an error.
       operationId: job-info
@@ -128,12 +124,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.JobInfoResponse'
+            $ref: '#/definitions/manager.JobInfoResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/rest.FailureResponse'
+            $ref: '#/definitions/manager.FailureResponse'
       summary: find a single job by it's id
+      tags:
+      - jobs
+  /manager/job/list:
+    get:
+      description: This method will return a list of all jobs
+      operationId: job-list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.JobListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: lists all jobs
       tags:
       - jobs
 swagger: "2.0"

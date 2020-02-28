@@ -4,9 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/inconshreveable/log15"
-
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
 // pipeline module for shell cmds
@@ -25,25 +24,32 @@ func (e *Shell) Command() string {
 }
 
 // Execute - Executes the set of commands as shell commands in the environment
-func (e *Shell) Execute(pipelog log.Logger, env environment.Environment, cmds []string) error {
+func (e *Shell) Execute(env environment.Environment, cmds []string, tracker pipeline.JobTracker) error {
 	for _, cmd := range cmds {
-		pipelog.Info("executing command `" + cmd + "`")
-		result, err := env.Execute(append([]string{}, "/bin/sh", "-c", cmd), nil, nil)
+		tracker.Logger().Info("executing command `" + cmd + "`")
+		result, err := env.Execute(
+			append([]string{}, "/bin/sh", "-c", cmd),
+			func(outmsg string) {
+				tracker.TrackStdOut(outmsg)
+			},
+			func(errmsg string) {
+				tracker.TrackStdErr(errmsg)
+			})
 		if err != nil {
 			return err
 		}
 
 		if result.ExitCode == 0 {
 			if result.StdOut != "" {
-				pipelog.Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
+				tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
 			} else if result.StdErr != "" {
-				pipelog.Info("command result: `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+				tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 			}
 		} else {
 			if result.StdErr != "" {
-				pipelog.Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+				tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 			} else {
-				pipelog.Info("command failed with code " + strconv.Itoa(result.ExitCode))
+				tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode))
 			}
 		}
 	}

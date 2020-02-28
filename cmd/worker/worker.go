@@ -1,14 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
 
 	"github.com/BurntSushi/toml"
-	"github.com/google/uuid"
 	log "github.com/inconshreveable/log15"
 )
 
@@ -17,28 +18,32 @@ type config struct {
 }
 
 // amqp channels
-var recvPipelineExecute chan string
-var sendPipelineStatus chan string
+var recvJobExecute chan string
+var sendJobStatus chan string
 
 // TODO: send status updates containing log messages
 // TODO: send status updates containing raw cmd exec log
 func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string) {
+	msg := manager.ExecuteJobMessage{}
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		srvlog.Crit("unable to unmarshal payload", "error", err)
+		return
+	}
+
 	// create logging instance for this pipeline
-	id := uuid.New().String()
-	pipelog := srvlog.New("pipeline", id)
-	pipelog.Info("pipeline `" + id + "` created")
+	tracker := pipeline.CreateJobTracker(srvlog, sendJobStatus, msg.ID)
 
 	// parse pipeline script
-	pipeline, err := pipeline.CreateFromBytes([]byte(payload))
+	pipe, err := pipeline.CreateFromBytes([]byte(msg.Pipeline))
 	if err != nil {
-		pipelog.Info("unable to parse pipeline file", err)
+		tracker.Logger().Crit("unable to parse pipeline file", "error", err)
 		return
 	}
 
 	// execute pipeline on engine
-	err = engine.ExecutePipeline(pipelog, pipeline)
+	err = engine.ExecutePipeline(pipe, tracker)
 	if err != nil {
-		pipelog.Info("unable to execute pipeline", err)
+		tracker.Logger().Crit("unable to execute pipeline", "error", err)
 		return
 	}
 }
@@ -67,11 +72,11 @@ func main() {
 
 	// setup amqp
 	client := amqp.Create(conf.AMQP)
-	recvPipelineExecute = client.RegisterConsumer("pipeline_execute")
-	sendPipelineStatus = client.RegisterProducer("pipeline_status")
+	recvJobExecute = client.RegisterConsumer("pipeline_execute")
+	sendJobStatus = client.RegisterProducer("pipeline_status")
 	client.Start()
 
-	for payload := range recvPipelineExecute {
+	for payload := range recvJobExecute {
 		go executePipeline(srvlog, &engine, payload)
 	}
 }

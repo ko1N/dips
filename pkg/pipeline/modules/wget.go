@@ -2,13 +2,11 @@ package modules
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
-	log "github.com/inconshreveable/log15"
-
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
 // pipeline module for wget
@@ -27,33 +25,36 @@ func (e *WGet) Command() string {
 }
 
 // Execute -
-func (e *WGet) Execute(pipelog log.Logger, env environment.Environment, cmds []string) error {
+func (e *WGet) Execute(env environment.Environment, cmds []string, tracker pipeline.JobTracker) error {
 	for _, cmd := range cmds {
 		// run wget and track progress
-		pipelog.Info("executing wget `" + cmd + "`")
+		tracker.Logger().Info("executing wget `" + cmd + "`")
 		result, err := env.Execute(
 			append([]string{}, "/bin/sh", "-c", "wget -q --show-progress "+cmd),
-			nil,
-			func(out string) {
-				if strings.Contains(out, "%") {
-					split := strings.Split(out, " ")
+			func(outmsg string) {
+				tracker.TrackStdOut(outmsg)
+			},
+			func(errmsg string) {
+				tracker.TrackStdErr(errmsg)
+				if strings.Contains(errmsg, "%") {
+					split := strings.Split(errmsg, " ")
 					for _, part := range split {
 						if strings.LastIndexByte(part, '%') == len(part)-1 {
 							progress, err := strconv.Atoi(strings.TrimSuffix(part, "%"))
 							if err == nil {
-								fmt.Printf("progress: %d\n", progress)
+								tracker.TrackProgress(uint(progress))
 							}
 						}
 					}
 				}
 			})
 		if err != nil {
-			pipelog.Crit("execution of wget failed")
+			tracker.Logger().Crit("execution of wget failed")
 			return err
 		}
 
 		if result.ExitCode == 0 {
-			pipelog.Info("wget finished")
+			tracker.Logger().Info("wget finished")
 		} else {
 			// TODO: handle error
 			return errors.New("wget failed")

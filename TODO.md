@@ -18,6 +18,11 @@ manager:
 - give each running pipeline a tracking id and send it to a worker
 - list pagination: https://github.com/moehlone/mongodm-example/blob/master/controllers/user.go
 
+event-tracking:
+- log messages
+- console output (stdout + stderr seperatly)
+- progress update
+
 "pipeline-ui":
 - easily deployable and configurable pipelines with config system (so users can configure a pipeline and trigger them)
 
