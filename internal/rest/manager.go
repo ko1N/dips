@@ -27,9 +27,8 @@ type SuccessResponse struct {
 
 // FailureResponse - response for a failed operation
 type FailureResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	Data   interface{} `json:"status"`
+	Status string `json:"status"`
+	Error  string `json:"error"`
 }
 
 // ExecuteJob - executes a job
@@ -80,7 +79,15 @@ func ExecuteJob(c *gin.Context) {
 		}
 		job.Stages = append(job.Stages, &js)
 	}
-	jobs.CreateJob(&job)
+
+	err = jobs.CreateJob(&job)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to create database entry for pipeline",
+			Error:  err.Error(),
+		})
+		return
+	}
 
 	// use job id
 
@@ -133,10 +140,10 @@ type JobInfoResponse struct {
 // @Description This method will return a single job by it's id or an error.
 // @ID pipeline-info
 // @Produce json
-// @Param id path string true "Job ID"
+// @Param job_id path string true "Job ID"
 // @Success 200 {object} JobInfoResponse
 // @Failure 400 {object} FailureResponse
-// @Router /manager/jobs/info/{:id} [get]
+// @Router /manager/jobs/info/{job_id} [get]
 func JobInfo(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

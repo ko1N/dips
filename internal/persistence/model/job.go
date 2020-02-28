@@ -11,19 +11,19 @@ import "github.com/zebresel-com/mongodm"
 type Job struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
 	Pipeline             string      `json:"pipeline" bson:"pipeline" required:"true"`
-	Progress             uint        `json:"progress" bson:"progress" required:"true"`
+	Progress             uint        `json:"progress" bson:"progress"`
 	Stages               []*JobStage `json:"stages" bson:"stages"`
 }
 
 // JobStage - Database struct describing a job stage
 type JobStage struct {
 	Name     string          `json:"name" bson:"name" required:"true"`
-	Progress uint            `json:"progress" bson:"progress" required:"true"`
+	Progress uint            `json:"progress" bson:"progress"`
 	Tasks    []*JobStageTask `json:"tasks" bson:"tasks"`
 }
 
 // JobStageTask - Database struct describing a stage task
 type JobStageTask struct {
 	Name     string `json:"name" bson:"name" required:"true"`
-	Progress uint   `json:"progress" bson:"progress" required:"true"`
+	Progress uint   `json:"progress" bson:"progress"`
 }

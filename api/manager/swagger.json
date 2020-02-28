@@ -71,7 +71,7 @@
                 }
             }
         },
-        "/manager/jobs/info/{:id}": {
+        "/manager/jobs/info/{job_id}": {
             "get": {
                 "description": "This method will return a single job by it's id or an error.",
                 "produces": [
@@ -83,7 +83,7 @@
                     {
                         "type": "string",
                         "description": "Job ID",
-                        "name": "id",
+                        "name": "job_id",
                         "in": "path",
                         "required": true
                     }

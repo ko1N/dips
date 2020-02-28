@@ -108,14 +108,14 @@ paths:
           schema:
             $ref: '#/definitions/rest.FailureResponse'
       summary: lists all jobs
-  /manager/jobs/info/{:id}:
+  /manager/jobs/info/{job_id}:
     get:
       description: This method will return a single job by it's id or an error.
       operationId: pipeline-info
       parameters:
       - description: Job ID
         in: path
-        name: id
+        name: job_id
         required: true
         type: string
       produces:
