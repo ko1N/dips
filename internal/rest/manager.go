@@ -35,6 +35,7 @@ type FailureResponse struct {
 // @Summary executes a job
 // @Description This method will execute the job sent via the post body
 // @ID execute-job
+// @Tags jobs
 // @Accept plain
 // @Produce json
 // @Param pipeline body string true "Pipeline Script"
@@ -108,6 +109,7 @@ type JobListResponse struct {
 // @Summary lists all jobs
 // @Description This method will return a list of all jobs
 // @ID job-list
+// @Tags jobs
 // @Produce json
 // @Success 200 {object} JobListResponse
 // @Failure 400 {object} FailureResponse
@@ -138,7 +140,8 @@ type JobInfoResponse struct {
 // JobInfo - find a single job by it's id
 // @Summary find a single job by it's id
 // @Description This method will return a single job by it's id or an error.
-// @ID pipeline-info
+// @ID job-info
+// @Tags jobs
 // @Produce json
 // @Param job_id path string true "Job ID"
 // @Success 200 {object} JobInfoResponse

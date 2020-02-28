@@ -18,6 +18,9 @@
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "jobs"
+                ],
                 "summary": "executes a job",
                 "operationId": "execute-job",
                 "parameters": [
@@ -53,6 +56,9 @@
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "jobs"
+                ],
                 "summary": "lists all jobs",
                 "operationId": "job-list",
                 "responses": {
@@ -77,8 +83,11 @@
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "jobs"
+                ],
                 "summary": "find a single job by it's id",
-                "operationId": "pipeline-info",
+                "operationId": "job-info",
                 "parameters": [
                     {
                         "type": "string",

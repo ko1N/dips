@@ -92,6 +92,8 @@ paths:
           schema:
             $ref: '#/definitions/rest.FailureResponse'
       summary: executes a job
+      tags:
+      - jobs
   /manager/job/list:
     get:
       description: This method will return a list of all jobs
@@ -108,10 +110,12 @@ paths:
           schema:
             $ref: '#/definitions/rest.FailureResponse'
       summary: lists all jobs
+      tags:
+      - jobs
   /manager/jobs/info/{job_id}:
     get:
       description: This method will return a single job by it's id or an error.
-      operationId: pipeline-info
+      operationId: job-info
       parameters:
       - description: Job ID
         in: path
@@ -130,4 +134,6 @@ paths:
           schema:
             $ref: '#/definitions/rest.FailureResponse'
       summary: find a single job by it's id
+      tags:
+      - jobs
 swagger: "2.0"
