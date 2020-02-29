@@ -9,6 +9,7 @@ worker:
 - config should specify the use of a gpu, pipelines with gpu requirements will be forced on workers with a gpu installed
 - buffer tracking messages before sending them to fast
 - logfile with log rotation
+- keep local database (e.g. store docker containers in db so we can clean them up in case of a crash!)
 
 manager:
 - api to paginate/list/start/stop pipelines
