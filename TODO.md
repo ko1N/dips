@@ -36,6 +36,10 @@ pipelines:
 - specify required docker registry for the given image (and provide a way to configure credentials in the manager and send them to the workers for each pipeline)
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
 - properly track pwd
+- implement executionResult for other modules than shell
+- rename engine.go to runtime.go maybe?
+- rename modules package to extensions package
+- seperate interfaces from implementations in environment and storage (like we did with extensions)
 
 environment/docker:
 - cd does not change pwd
