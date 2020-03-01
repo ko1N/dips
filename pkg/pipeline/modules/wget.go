@@ -25,17 +25,17 @@ func (e *WGet) Command() string {
 }
 
 // StartPipeline -
-func (e *WGet) StartPipeline(ctx pipeline.ExecutionContext) error {
+func (e *WGet) StartPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // FinishPipeline -
-func (e *WGet) FinishPipeline(ctx pipeline.ExecutionContext) error {
+func (e *WGet) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // Execute -
-func (e *WGet) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *WGet) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
 	// run wget and track progress
 	ctx.Tracker.Logger().Info("executing wget `" + cmd + "`")
 	result, err := ctx.Environment.Execute(

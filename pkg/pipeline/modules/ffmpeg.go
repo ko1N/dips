@@ -29,17 +29,17 @@ func (e *FFMpeg) Command() string {
 }
 
 // StartPipeline -
-func (e *FFMpeg) StartPipeline(ctx pipeline.ExecutionContext) error {
+func (e *FFMpeg) StartPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // FinishPipeline -
-func (e *FFMpeg) FinishPipeline(ctx pipeline.ExecutionContext) error {
+func (e *FFMpeg) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // Execute -
-func (e *FFMpeg) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *FFMpeg) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
 	ctx.Tracker.Logger().Info("probing input files")
 	file, duration, err := e.estimateDuration(ctx, cmd)
 	if err != nil {
@@ -81,7 +81,7 @@ func (e *FFMpeg) Execute(ctx pipeline.ExecutionContext, cmd string) (environment
 	return environment.ExecutionResult{}, nil
 }
 
-func (e *FFMpeg) estimateDuration(ctx pipeline.ExecutionContext, cmd string) (string, float64, error) {
+func (e *FFMpeg) estimateDuration(ctx *pipeline.ExecutionContext, cmd string) (string, float64, error) {
 	// parse argument list and figure out the input file(s)
 	var opts struct {
 		Input string `short:"i" long:"input"`

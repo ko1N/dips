@@ -24,17 +24,17 @@ func (e *Shell) Command() string {
 }
 
 // StartPipeline -
-func (e *Shell) StartPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Shell) StartPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // FinishPipeline -
-func (e *Shell) FinishPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Shell) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 	return nil
 }
 
 // Execute - Executes the set of commands as shell commands in the environment
-func (e *Shell) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *Shell) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
 	ctx.Tracker.Logger().Info("executing command `" + cmd + "`")
 	result, err := ctx.Environment.Execute(
 		append([]string{}, "/bin/sh", "-c", cmd),
@@ -57,9 +57,9 @@ func (e *Shell) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.
 		}
 	} else {
 		if result.StdErr != "" {
-			ctx.Tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+			ctx.Tracker.Logger().Warn("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 		} else {
-			ctx.Tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode))
+			ctx.Tracker.Logger().Warn("command failed with code " + strconv.Itoa(result.ExitCode))
 		}
 	}
 

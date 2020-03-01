@@ -32,19 +32,19 @@ func (e *Storage) Command() string {
 }
 
 // StartPipeline -
-func (e *Storage) StartPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Storage) StartPipeline(ctx *pipeline.ExecutionContext) error {
 	ctx.Tracker.Logger().Info("creating storage bucket `" + ctx.JobID + "`")
 	return e.Storage.CreateBucket(ctx.JobID)
 }
 
 // FinishPipeline -
-func (e *Storage) FinishPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Storage) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 	ctx.Tracker.Logger().Info("deleting storage bucket `" + ctx.JobID + "`")
 	return e.Storage.DeleteBucket(ctx.JobID)
 }
 
 // Execute - Executes the given storage command
-func (e *Storage) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *Storage) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
 	cmdSplit := strings.Split(cmd, " ")
 	switch cmdSplit[0] {
 	case "ls":
@@ -71,7 +71,7 @@ func (e *Storage) Execute(ctx pipeline.ExecutionContext, cmd string) (environmen
 }
 
 // TODO: get this back into the execution context / variables?
-func (e *Storage) listFiles(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) listFiles(ctx *pipeline.ExecutionContext, args []string) error {
 	if len(args) > 0 {
 		return errors.New("ls command does not have any parameters")
 	}
@@ -89,7 +89,7 @@ func (e *Storage) listFiles(ctx pipeline.ExecutionContext, args []string) error 
 	return nil
 }
 
-func (e *Storage) getFile(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) getFile(ctx *pipeline.ExecutionContext, args []string) error {
 	// TODO: handle multiple files (wildcards?)
 	// TODO: handle get [filename] [outfilename]
 	if len(args) != 1 {
@@ -115,7 +115,7 @@ func (e *Storage) getFile(ctx pipeline.ExecutionContext, args []string) error {
 	return os.Remove(tempFile)
 }
 
-func (e *Storage) putFile(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) putFile(ctx *pipeline.ExecutionContext, args []string) error {
 	// TODO: handle multiple files (wildcards?)
 	// TODO: handle put [filename] [outfilename]
 	if len(args) != 1 {
