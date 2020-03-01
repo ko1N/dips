@@ -1,0 +1,13 @@
+---
+- stage: testing conditional execution
+  environment: docker/alpine:latest
+  tasks:
+
+  - name: try execute /usr/bin/foo
+    shell: /usr/bin/foo
+    register: foo_result
+    ignore_errors: "false"
+
+  - shell: /usr/bin/bar
+    when: foo_result.rc == 5
+

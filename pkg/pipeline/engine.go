@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
@@ -86,8 +87,20 @@ func (e *Engine) ExecutePipeline(ctx ExecutionContext) error {
 			for _, cmd := range task.Command {
 				for _, ext := range e.Extensions {
 					if ext.Command() == cmd.Name {
-						//fmt.Println("executing cmd " + ext.Name())
-						ext.Execute(ctx, cmd.Arguments)
+						for _, line := range cmd.Lines {
+							res, err := ext.Execute(ctx, line)
+							if err != nil {
+								ctx.Tracker.Logger().Crit("task execution failed", "error", err)
+								return err
+							}
+
+							if !task.IgnoreErrors && res.ExitCode != 0 {
+								ctx.Tracker.Logger().Crit("aborting pipeline execution", "error", "task failed to exit properly (exitcode "+strconv.Itoa(res.ExitCode)+")")
+								return nil
+							}
+
+							// TODO: handle register
+						}
 					}
 				}
 			}

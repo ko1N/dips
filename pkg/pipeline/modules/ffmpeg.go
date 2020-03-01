@@ -9,6 +9,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
@@ -38,48 +39,46 @@ func (e *FFMpeg) FinishPipeline(ctx pipeline.ExecutionContext) error {
 }
 
 // Execute -
-func (e *FFMpeg) Execute(ctx pipeline.ExecutionContext, cmds []string) error {
-	for _, cmd := range cmds {
-		ctx.Tracker.Logger().Info("probing input files")
-		file, duration, err := e.estimateDuration(ctx, cmd)
-		if err != nil {
-			ctx.Tracker.Logger().Crit("unable to estimate file duration")
-			return err
-		}
-		ctx.Tracker.Logger().Info(fmt.Sprintf("input file `%s` is %f seconds long", file, duration))
+func (e *FFMpeg) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+	ctx.Tracker.Logger().Info("probing input files")
+	file, duration, err := e.estimateDuration(ctx, cmd)
+	if err != nil {
+		ctx.Tracker.Logger().Crit("unable to estimate file duration")
+		return environment.ExecutionResult{}, err
+	}
+	ctx.Tracker.Logger().Info(fmt.Sprintf("input file `%s` is %f seconds long", file, duration))
 
-		// run ffmpeg and track progress
-		ctx.Tracker.Logger().Info("executing ffmpeg `" + cmd + "`")
-		result, err := ctx.Environment.Execute(
-			append([]string{}, "/bin/sh", "-c", "ffmpeg -v warning -progress /dev/stdout "+cmd),
-			func(outmsg string) {
-				ctx.Tracker.TrackStdOut(outmsg)
-				s := strings.Split(outmsg, "=")
-				if len(s) == 2 && s[0] == "out_time_us" {
-					time, err := strconv.Atoi(s[1])
-					if err == nil {
-						progress := float64(time) / (duration * 1000.0 * 1000.0)
-						ctx.Tracker.TrackProgress(uint(progress * 100.0))
-					}
+	// run ffmpeg and track progress
+	ctx.Tracker.Logger().Info("executing ffmpeg `" + cmd + "`")
+	result, err := ctx.Environment.Execute(
+		append([]string{}, "/bin/sh", "-c", "ffmpeg -v warning -progress /dev/stdout "+cmd),
+		func(outmsg string) {
+			ctx.Tracker.TrackStdOut(outmsg)
+			s := strings.Split(outmsg, "=")
+			if len(s) == 2 && s[0] == "out_time_us" {
+				time, err := strconv.Atoi(s[1])
+				if err == nil {
+					progress := float64(time) / (duration * 1000.0 * 1000.0)
+					ctx.Tracker.TrackProgress(uint(progress * 100.0))
 				}
-			},
-			func(errmsg string) {
-				ctx.Tracker.TrackStdErr(errmsg)
-			})
-		if err != nil {
-			ctx.Tracker.Logger().Crit("execution of ffmpeg failed")
-			return err
-		}
-
-		if result.ExitCode == 0 {
-			ctx.Tracker.Logger().Info("ffmpeg transcode finished")
-		} else {
-			// TODO: handle error
-			return errors.New("unable to transcode video")
-		}
+			}
+		},
+		func(errmsg string) {
+			ctx.Tracker.TrackStdErr(errmsg)
+		})
+	if err != nil {
+		ctx.Tracker.Logger().Crit("execution of ffmpeg failed")
+		return environment.ExecutionResult{}, err
 	}
 
-	return nil
+	if result.ExitCode == 0 {
+		ctx.Tracker.Logger().Info("ffmpeg transcode finished")
+	} else {
+		// TODO: handle error
+		return environment.ExecutionResult{}, errors.New("unable to transcode video")
+	}
+
+	return environment.ExecutionResult{}, nil
 }
 
 func (e *FFMpeg) estimateDuration(ctx pipeline.ExecutionContext, cmd string) (string, float64, error) {

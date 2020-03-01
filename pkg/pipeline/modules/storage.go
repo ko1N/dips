@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 
 	"github.com/google/uuid"
@@ -43,31 +44,30 @@ func (e *Storage) FinishPipeline(ctx pipeline.ExecutionContext) error {
 }
 
 // Execute - Executes the given storage command
-func (e *Storage) Execute(ctx pipeline.ExecutionContext, cmds []string) error {
-	for _, cmd := range cmds {
-		cmdSplit := strings.Split(cmd, " ")
-		switch cmdSplit[0] {
-		case "ls":
-			if err := e.listFiles(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		case "get":
-			if err := e.getFile(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		case "put":
-			if err := e.putFile(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		default:
-			ctx.Tracker.Logger().Crit("invalid storage command: `" + cmd + "`. usage: ls/get/put")
-			break
+func (e *Storage) Execute(ctx pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+	cmdSplit := strings.Split(cmd, " ")
+	switch cmdSplit[0] {
+	case "ls":
+		if err := e.listFiles(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
 		}
+		break
+	case "get":
+		if err := e.getFile(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+		}
+		break
+	case "put":
+		if err := e.putFile(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+		}
+		break
+	default:
+		ctx.Tracker.Logger().Crit("invalid storage command: `" + cmd + "`. usage: ls/get/put")
+		break
 	}
-	return nil
+
+	return environment.ExecutionResult{}, nil
 }
 
 // TODO: get this back into the execution context / variables?
