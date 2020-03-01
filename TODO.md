@@ -44,6 +44,11 @@ extensions/wget:
 - error is not handled properly
 - should be installed automatically or give a proper error...
 
+extensions/storage:
+- track progress on file tranfers
+- ls should store result in a variable and pipe (when using register cmd)
+- we need a command to copy the final result file(s) out of the storage before deleting the storage
+
 extensions:
 - hook for start/stop pipelines
 
