@@ -3,7 +3,6 @@ worker:
 - if a worker is full redirect messages to different workers
 - pipelines should have a set of inputs (either variables, resources or files)
 - parse variables
-- copy files from/to environments/pipelines https://github.com/docker/cli/blob/master/cli/command/container/cp.go#L186
 - config file to allow/disallow environments and modules
 - the pipeline should have a set of default env variables (e.g. container id for docker or env name)
 - config should specify the use of a gpu, pipelines with gpu requirements will be forced on workers with a gpu installed
@@ -53,9 +52,6 @@ extensions/storage:
 - ls should store result in a variable and pipe (when using register cmd)
 - we need a command to copy the final result file(s) out of the storage before deleting the storage
 
-extensions:
-- hook for start/stop pipelines
-
 structure:
 - /configs for default configs
 - add /scripts directory for build/install/analysis
@@ -63,6 +59,7 @@ structure:
 - /test should contain additional external test apps and test data
 - create cmd for manual pipeline execution (for development of pipelines)
 - use error wrapping!!!
+- move storage to pkg
 
 pipeline ideas:
 - upscale/upsample/ffmpeg transcode
