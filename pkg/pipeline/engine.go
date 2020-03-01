@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/d5/tengo/v2"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 )
 
@@ -35,17 +36,18 @@ type ExecutionContext struct {
 	Pipeline    Pipeline
 	Tracker     JobTracker
 	Environment environment.Environment
+	Variables   map[string]tengo.Object
 }
 
 // ExecutePipeline - executed the given pipeline on the engine
 func (e *Engine) ExecutePipeline(ctx ExecutionContext) error {
-	// create a channel for communication
-	// + logging for this pipeline, then exec it
+	ctx.Tracker.Logger().Info("------ Starting Pipeline: " + ctx.JobID)
+	defer ctx.Tracker.Logger().Info("------ Finished Pipeline: " + ctx.JobID)
 
-	// TODO: read stages and execute them here,
-	// TODO: properly parse the pipeline interfaces into structures in the CreatePipeline() func
-
-	//wf.Run()
+	// TODO: add CreateExecutionContext
+	// TODO: move context into seperate file
+	// TODO: decouple this function into ExecutionContext
+	ctx.Variables = make(map[string]tengo.Object)
 
 	// call startPipline extension hooks
 	for _, ext := range e.Extensions {
@@ -83,23 +85,39 @@ func (e *Engine) ExecutePipeline(ctx ExecutionContext) error {
 			ctx.Tracker.Logger().Info("--- Executing Task: " + task.Name)
 			ctx.Tracker.TrackTask(taskID)
 
+			// check "when" condition
+			if task.When.Script != "" {
+				res, err := task.When.Evaluate(ctx.Variables)
+				if err != nil {
+					ctx.Tracker.Logger().Crit("unable to compile expression", "error", err)
+					return err
+				}
+				if res == false {
+					ctx.Tracker.Logger().Info("`when` condition not met, skipping task")
+					continue
+				}
+			}
+
 			// TODO: new func + throw error if command was not found!
 			for _, cmd := range task.Command {
 				for _, ext := range e.Extensions {
 					if ext.Command() == cmd.Name {
 						for _, line := range cmd.Lines {
-							res, err := ext.Execute(ctx, line)
+							result, err := ext.Execute(ctx, line)
 							if err != nil {
 								ctx.Tracker.Logger().Crit("task execution failed", "error", err)
 								return err
 							}
 
-							if !task.IgnoreErrors && res.ExitCode != 0 {
-								ctx.Tracker.Logger().Crit("aborting pipeline execution", "error", "task failed to exit properly (exitcode "+strconv.Itoa(res.ExitCode)+")")
+							if !task.IgnoreErrors && result.ExitCode != 0 {
+								ctx.Tracker.Logger().Crit("aborting pipeline execution", "error", "task failed to exit properly (exitcode "+strconv.Itoa(result.ExitCode)+")")
 								return nil
 							}
 
-							// TODO: handle register
+							// convert result into tengo objects and store it
+							if task.Register != "" {
+								ctx.Variables[task.Register] = result.ToScriptObject()
+							}
 						}
 					}
 				}

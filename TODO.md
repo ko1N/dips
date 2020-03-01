@@ -37,6 +37,10 @@ pipelines:
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
 - properly track pwd
 - implement executionResult for other modules than shell
+- rename engine.go to runtime.go maybe?
+- rename modules package to extensions package
+- seperate interfaces from implementations in environment and storage (like we did with extensions)
+- change api so we create a exeuctioncontext from an engine and run the execution context directly (just forge an object)
 
 environment/docker:
 - cd does not change pwd

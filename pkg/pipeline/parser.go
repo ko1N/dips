@@ -19,11 +19,6 @@ type Command struct {
 	Lines []string
 }
 
-// Expression -
-type Expression struct {
-	Script string
-}
-
 // Task -
 type Task struct {
 	Name         string
