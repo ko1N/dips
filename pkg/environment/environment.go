@@ -10,9 +10,10 @@ type ExecutionResult struct {
 // Environment -
 type Environment interface {
 	Name() string
-	Execute([]string, func(string), func(string)) (ExecutionResult, error)
+	Execute(cmd []string, stdout func(string), stderr func(string)) (ExecutionResult, error)
 
-	// TODO: add CopyFrom/CopyTo functions to copy from/to the environment
+	CopyTo(from string, to string) error
+	CopyFrom(from string, to string) error
 
 	Close()
 }

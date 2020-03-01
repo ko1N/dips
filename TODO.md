@@ -35,6 +35,17 @@ pipelines:
 - specify gpu use
 - specify required docker registry for the given image (and provide a way to configure credentials in the manager and send them to the workers for each pipeline)
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
+- properly track pwd
+
+environment/docker:
+- cd does not change pwd
+
+extensions/wget:
+- error is not handled properly
+- should be installed automatically or give a proper error...
+
+extensions:
+- hook for start/stop pipelines
 
 structure:
 - /configs for default configs
@@ -42,3 +53,10 @@ structure:
 - add /build folder for docker
 - /test should contain additional external test apps and test data
 - create cmd for manual pipeline execution (for development of pipelines)
+- use error wrapping!!!
+
+pipeline ideas:
+- upscale/upsample/ffmpeg transcode
+- spotify downloader
+- blender render
+- 

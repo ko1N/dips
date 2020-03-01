@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 

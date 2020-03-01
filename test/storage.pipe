@@ -1,0 +1,24 @@
+---
+- stage: testing storage copy from/to
+  environment: docker/alpine:latest
+  tasks:
+  - name: download wget
+    shell: apk add wget
+  - name: list files on storage
+    storage: ls
+  - name: download a video
+    wget: https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4
+  - name: rename video
+    shell: mv Big_Buck_Bunny_1080_10s_30MB.mp4 big_buck_bunny.mp4
+  - name: list directory
+    shell: ls -la .
+  - name: upload file
+    storage: put big_buck_bunny.mp4
+  - name: delete local file
+    shell: rm big_buck_bunny.mp4
+  - name: list directory
+    shell: ls -la .
+  - name: download file
+    storage: get big_buck_bunny.mp4
+  - name: list directory
+    shell: ls -la .

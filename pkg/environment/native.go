@@ -110,6 +110,16 @@ func (e *NativeEnvironment) Execute(cmd []string, stdout func(string), stderr fu
 	}, nil
 }
 
+// CopyTo - copies a file to the environment
+func (e *NativeEnvironment) CopyTo(from string, to string) error {
+	return nil
+}
+
+// CopyFrom - copies a file from the environment
+func (e *NativeEnvironment) CopyFrom(from string, to string) error {
+	return nil
+}
+
 // Close - shuts down the environment and removes the temp folder
 func (e *NativeEnvironment) Close() {
 	if e.PWD != "" {

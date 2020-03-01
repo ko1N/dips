@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"time"
 
 	log "github.com/inconshreveable/log15"
@@ -13,7 +16,9 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/docker/pkg/system"
 )
 
 // implements a dockerized environment
@@ -83,6 +88,7 @@ func (e *DockerEnvironment) Execute(cmd []string, stdout func(string), stderr fu
 		AttachStderr: true,
 		Cmd:          cmd,
 		User:         "root", // TODO: make configurable
+		//WorkingDir: ...
 	}
 
 	exec, err := e.cli.ContainerExecCreate(e.ctx, e.id, cfg)
@@ -169,6 +175,102 @@ func (e *DockerEnvironment) Execute(cmd []string, stdout func(string), stderr fu
 
 		time.Sleep(time.Second)
 	}
+}
+
+// see https://github.com/docker/cli/blob/2298e6a3fe24d3ac9276acdd35c24c06c8f58125/cli/command/utils.go#L159
+// validateOutputPathFileMode validates the output paths of the `cp` command and serves as a
+// helper to `ValidateOutputPath`
+func validateOutputPathFileMode(fileMode os.FileMode) error {
+	switch {
+	case fileMode&os.ModeDevice != 0:
+		return errors.New("got a device")
+	case fileMode&os.ModeIrregular != 0:
+		return errors.New("got an irregular file")
+	}
+	return nil
+}
+
+// CopyTo - copies a file to the docker container
+func (e *DockerEnvironment) CopyTo(from string, to string) error {
+	// see https://github.com/docker/cli/blob/master/cli/command/container/cp.go#L186
+
+	// prepare source file info
+	srcInfo, err := archive.CopyInfoSourcePath(from, false)
+	if err != nil {
+		return err
+	}
+
+	srcArchive, err := archive.TarResource(srcInfo)
+	if err != nil {
+		return err
+	}
+	defer srcArchive.Close()
+
+	// prepare destination file info
+	dstInfo := archive.CopyInfo{Path: to}
+	dstStat, err := e.cli.ContainerStatPath(e.ctx, e.id, to)
+
+	// if the destination is a symbolic link, we should evaluate it
+	if err == nil && dstStat.Mode&os.ModeSymlink != 0 {
+		linkTarget := dstStat.LinkTarget
+		if !system.IsAbs(linkTarget) {
+			// join with the parent directory
+			dstParent, _ := archive.SplitPathDirEntry(to)
+			linkTarget = filepath.Join(dstParent, linkTarget)
+		}
+
+		dstInfo.Path = linkTarget
+		dstStat, err = e.cli.ContainerStatPath(e.ctx, e.id, linkTarget)
+	}
+
+	// validate the destination path
+	if err := validateOutputPathFileMode(dstStat.Mode); err != nil {
+		//return errors.Wrapf(err, "destination `%s` must be a directory or a regular file", to)
+		return err
+	}
+
+	// prepare copy
+	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
+	if err != nil {
+		return err
+	}
+	defer preparedArchive.Close()
+
+	// copy the archive
+	return e.cli.CopyToContainer(
+		e.ctx,
+		e.id,
+		dstDir,
+		preparedArchive,
+		types.CopyToContainerOptions{
+			AllowOverwriteDirWithFile: false,
+			//CopyUIDGID:                false,
+		})
+}
+
+// CopyFrom - copies a file from the docker container
+func (e *DockerEnvironment) CopyFrom(from string, to string) error {
+	// see https://github.com/docker/cli/blob/master/cli/command/container/cp.go#L119
+
+	content, stat, err := e.cli.CopyFromContainer(e.ctx, e.id, from)
+	if err != nil {
+		return err
+	}
+	defer content.Close()
+
+	srcInfo := archive.CopyInfo{
+		Path:       from,
+		Exists:     true,
+		IsDir:      stat.Mode.IsDir(),
+		RebaseName: "", // we ignore symlink following atm
+	}
+
+	preArchive := content
+	if len(srcInfo.RebaseName) != 0 {
+		_, srcBase := archive.SplitPathDirEntry(srcInfo.Path)
+		preArchive = archive.RebaseArchiveEntries(content, srcBase, srcInfo.RebaseName)
+	}
+	return archive.CopyTo(preArchive, srcInfo, to)
 }
 
 // Close - shuts down the environment and the corresponding container

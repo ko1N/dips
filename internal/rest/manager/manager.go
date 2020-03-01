@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zebresel-com/mongodm"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/crud"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/model"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/crud"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gopkg.in/mgo.v2/bson"
 )

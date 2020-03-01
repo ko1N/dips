@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
@@ -23,17 +22,27 @@ func (e *Shell) Command() string {
 	return "shell"
 }
 
+// StartPipeline -
+func (e *Shell) StartPipeline(ctx pipeline.ExecutionContext) error {
+	return nil
+}
+
+// FinishPipeline -
+func (e *Shell) FinishPipeline(ctx pipeline.ExecutionContext) error {
+	return nil
+}
+
 // Execute - Executes the set of commands as shell commands in the environment
-func (e *Shell) Execute(env environment.Environment, cmds []string, tracker pipeline.JobTracker) error {
+func (e *Shell) Execute(ctx pipeline.ExecutionContext, cmds []string) error {
 	for _, cmd := range cmds {
-		tracker.Logger().Info("executing command `" + cmd + "`")
-		result, err := env.Execute(
+		ctx.Tracker.Logger().Info("executing command `" + cmd + "`")
+		result, err := ctx.Environment.Execute(
 			append([]string{}, "/bin/sh", "-c", cmd),
 			func(outmsg string) {
-				tracker.TrackStdOut(outmsg)
+				ctx.Tracker.TrackStdOut(outmsg)
 			},
 			func(errmsg string) {
-				tracker.TrackStdErr(errmsg)
+				ctx.Tracker.TrackStdErr(errmsg)
 			})
 		if err != nil {
 			return err
@@ -41,15 +50,15 @@ func (e *Shell) Execute(env environment.Environment, cmds []string, tracker pipe
 
 		if result.ExitCode == 0 {
 			if result.StdOut != "" {
-				tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
+				ctx.Tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdOut, "\n") + "`")
 			} else if result.StdErr != "" {
-				tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+				ctx.Tracker.Logger().Info("command result: `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 			}
 		} else {
 			if result.StdErr != "" {
-				tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
+				ctx.Tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode) + ": `" + strings.TrimSuffix(result.StdErr, "\n") + "`")
 			} else {
-				tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode))
+				ctx.Tracker.Logger().Info("command failed with code " + strconv.Itoa(result.ExitCode))
 			}
 		}
 	}

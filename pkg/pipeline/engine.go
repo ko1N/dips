@@ -28,8 +28,16 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 	return e
 }
 
+// ExecutionContext - context for a execution
+type ExecutionContext struct {
+	JobID       string
+	Pipeline    Pipeline
+	Tracker     JobTracker
+	Environment environment.Environment
+}
+
 // ExecutePipeline - executed the given pipeline on the engine
-func (e *Engine) ExecutePipeline(wf Pipeline, tracker JobTracker) error {
+func (e *Engine) ExecutePipeline(ctx ExecutionContext) error {
 	// create a channel for communication
 	// + logging for this pipeline, then exec it
 
@@ -38,36 +46,54 @@ func (e *Engine) ExecutePipeline(wf Pipeline, tracker JobTracker) error {
 
 	//wf.Run()
 
-	var taskID uint
-	for _, stage := range wf.Stages {
-		tracker.Logger().Info("------ Performing Stage: " + stage.Name)
-
-		// setup environment
-		tracker.Logger().Info("--- Creating environment: " + stage.Environment)
-		env, err := e.createEnvironment(stage.Environment, tracker)
-		if err != nil {
-			tracker.Logger().Crit("unable to create environment `" + stage.Environment + "`")
+	// call startPipline extension hooks
+	for _, ext := range e.Extensions {
+		if err := ext.StartPipeline(ctx); err != nil {
 			return err
 		}
-		defer env.Close()
+	}
+
+	defer func() {
+		// call finishPipline extension hooks (regardless of failure)
+		for _, ext := range e.Extensions {
+			ext.FinishPipeline(ctx)
+		}
+	}()
+
+	var taskID uint
+	for _, stage := range ctx.Pipeline.Stages {
+		ctx.Tracker.Logger().Info("------ Performing Stage: " + stage.Name)
+
+		// setup environment
+		ctx.Tracker.Logger().Info("--- Creating environment: " + stage.Environment)
+		env, err := e.createEnvironment(stage.Environment, ctx.Tracker)
+		if err != nil {
+			ctx.Tracker.Logger().Crit("unable to create environment `" + stage.Environment + "`")
+			return err
+		}
+		ctx.Environment = env
+		defer func() {
+			env.Close()
+			ctx.Environment = nil
+		}()
 
 		// execute tasks in pipeline
 		for _, task := range stage.Tasks {
-			tracker.Logger().Info("--- Executing Task: " + task.Name)
-			tracker.TrackTask(taskID)
+			ctx.Tracker.Logger().Info("--- Executing Task: " + task.Name)
+			ctx.Tracker.TrackTask(taskID)
 
 			// TODO: new func + throw error if command was not found!
 			for _, cmd := range task.Command {
 				for _, ext := range e.Extensions {
 					if ext.Command() == cmd.Name {
 						//fmt.Println("executing cmd " + ext.Name())
-						ext.Execute(env, cmd.Arguments, tracker)
+						ext.Execute(ctx, cmd.Arguments)
 					}
 				}
 			}
 
 			// if this task doesnt support tracking we just increase it to 100%
-			tracker.TrackProgress(100)
+			ctx.Tracker.TrackProgress(100)
 			taskID++
 		}
 	}

@@ -14,7 +14,7 @@ import (
 	// swagger generated docs
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 )
 
@@ -28,11 +28,11 @@ import (
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
 // generate crud wrappers
-//go:generate go run ../../internal/persistence/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/crud/job.go
+//go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/database/crud/job.go
 
 type config struct {
-	Database persistence.Config `json:"db" toml:"db"`
-	AMQP     amqp.Config        `json:"amqp" toml:"amqp"`
+	Database database.Config `json:"db" toml:"db"`
+	AMQP     amqp.Config     `json:"amqp" toml:"amqp"`
 }
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	// setup database
-	db, err := persistence.Connect(conf.Database)
+	db, err := database.Connect(conf.Database)
 	if err != nil {
 		srvlog.Crit("Database connection could not be established", "error", err)
 		return

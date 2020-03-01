@@ -1,2 +1,9 @@
 [amqp]
 host="rabbitmq:rabbitmq@localhost"
+
+[storage]
+endpoint="localhost:9000"
+access_key="minio"
+access_key_secret="miniominio"
+use_ssl=false
+location="us-east-1"

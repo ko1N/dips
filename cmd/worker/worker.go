@@ -5,6 +5,7 @@ import (
 	"flag"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
@@ -14,7 +15,8 @@ import (
 )
 
 type config struct {
-	AMQP amqp.Config `json:"amqp" toml:"amqp"`
+	AMQP    amqp.Config          `json:"amqp" toml:"amqp"`
+	Storage *storage.MinIOConfig `json:"storage" toml:"storage"`
 }
 
 // amqp channels
@@ -41,7 +43,12 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 	}
 
 	// execute pipeline on engine
-	err = engine.ExecutePipeline(pipe, tracker)
+	ctx := pipeline.ExecutionContext{
+		JobID:    msg.ID,
+		Pipeline: pipe,
+		Tracker:  tracker,
+	}
+	err = engine.ExecutePipeline(ctx)
 	if err != nil {
 		tracker.Logger().Crit("unable to execute pipeline", "error", err)
 		return
@@ -69,6 +76,17 @@ func main() {
 		RegisterExtension(&modules.Shell{}).
 		RegisterExtension(&modules.WGet{}).
 		RegisterExtension(&modules.FFMpeg{})
+
+	// setup storage
+	if conf.Storage != nil {
+		store, err := storage.ConnectMinIO(*conf.Storage)
+		if err != nil {
+			srvlog.Crit("Could not connect to minio storage server", "error", err)
+			return
+		}
+
+		engine.RegisterExtension(&modules.Storage{Storage: &store})
+	}
 
 	// setup amqp
 	client := amqp.Create(conf.AMQP)
