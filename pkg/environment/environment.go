@@ -12,7 +12,7 @@ type ExecutionResult struct {
 // ToScriptObject - converts the ExecutionResult to a script object
 func (r *ExecutionResult) ToScriptObject() tengo.Object {
 	failed := tengo.TrueValue
-	if r.ExitCode != 0 {
+	if r.ExitCode == 0 {
 		failed = tengo.FalseValue
 	}
 
