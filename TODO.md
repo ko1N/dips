@@ -3,7 +3,6 @@ worker:
 - if a worker is full redirect messages to different workers
 - pipelines should have a set of inputs (either variables, resources or files)
 - parse variables
-- copy files from/to environments/pipelines https://github.com/docker/cli/blob/master/cli/command/container/cp.go#L186
 - config file to allow/disallow environments and modules
 - the pipeline should have a set of default env variables (e.g. container id for docker or env name)
 - config should specify the use of a gpu, pipelines with gpu requirements will be forced on workers with a gpu installed
@@ -41,6 +40,11 @@ pipelines:
 
 tasks:
 - should be made generic and should be derived/extended in case task is async/has when condition/etc
+- properly track pwd
+- implement executionResult for other modules than shell
+- rename engine.go to runtime.go maybe?
+- rename modules package to extensions package
+- seperate interfaces from implementations in environment and storage (like we did with extensions)
 
 environment/docker:
 - cd does not change pwd
@@ -49,6 +53,11 @@ extensions/wget:
 - error is not handled properly
 - should be installed automatically or give a proper error...
 
+extensions/storage:
+- track progress on file tranfers
+- ls should store result in a variable and pipe (when using register cmd)
+- we need a command to copy the final result file(s) out of the storage before deleting the storage
+
 structure:
 - /configs for default configs
 - add /scripts directory for build/install/analysis
@@ -56,6 +65,7 @@ structure:
 - /test should contain additional external test apps and test data
 - create cmd for manual pipeline execution (for development of pipelines)
 - use error wrapping!!!
+- move storage to pkg
 
 pipeline ideas:
 - upscale/upsample/ffmpeg transcode

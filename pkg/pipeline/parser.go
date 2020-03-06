@@ -15,16 +15,18 @@ type Variable struct {
 
 // Command -
 type Command struct {
-	Name      string
-	Arguments []string
+	Name  string
+	Lines []string
 }
 
 // Task -
 type Task struct {
-	Name     string
-	Command  []Command
-	Register string   // VariableRef
-	Notify   []string // NotifyRef
+	Name         string
+	Command      []Command
+	IgnoreErrors bool
+	Register     string   // VariableRef
+	Notify       []string // NotifyRef
+	When         Expression
 }
 
 // Stage -
@@ -136,6 +138,10 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 			result.Name = value.(string)
 			break
 
+		case "ignore_errors":
+			result.IgnoreErrors = strings.ToLower(value.(string)) == "true"
+			break
+
 		case "register":
 			result.Register = value.(string)
 			break
@@ -156,6 +162,12 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 			}
 			break
 
+		case "when":
+			result.When = Expression{
+				Script: value.(string),
+			}
+			break
+
 		default:
 			cmd, err := parseCommand(key.(string), value)
 			if err != nil {
@@ -172,21 +184,21 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 func parseCommand(cmd string, args interface{}) (Command, error) {
 	if val, ok := args.(string); ok {
 		return Command{
-			Name:      cmd,
-			Arguments: []string{val},
+			Name:  cmd,
+			Lines: []string{val},
 		}, nil
 	} else if list, ok := args.([]interface{}); ok {
-		var arguments []string
+		var lines []string
 		for _, val := range list {
 			if str, ok := val.(string); ok {
-				arguments = append(arguments, str)
+				lines = append(lines, str)
 			} else {
 				return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\". Should be a string or a list of strings")
 			}
 		}
 		return Command{
-			Name:      cmd,
-			Arguments: arguments,
+			Name:  cmd,
+			Lines: lines,
 		}, nil
 	} else {
 		return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\"")

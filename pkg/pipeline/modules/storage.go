@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 
 	"github.com/google/uuid"
@@ -31,47 +32,46 @@ func (e *Storage) Command() string {
 }
 
 // StartPipeline -
-func (e *Storage) StartPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Storage) StartPipeline(ctx *pipeline.ExecutionContext) error {
 	ctx.Tracker.Logger().Info("creating storage bucket `" + ctx.JobID + "`")
 	return e.Storage.CreateBucket(ctx.JobID)
 }
 
 // FinishPipeline -
-func (e *Storage) FinishPipeline(ctx pipeline.ExecutionContext) error {
+func (e *Storage) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 	ctx.Tracker.Logger().Info("deleting storage bucket `" + ctx.JobID + "`")
 	return e.Storage.DeleteBucket(ctx.JobID)
 }
 
 // Execute - Executes the given storage command
-func (e *Storage) Execute(ctx pipeline.ExecutionContext, cmds []string) error {
-	for _, cmd := range cmds {
-		cmdSplit := strings.Split(cmd, " ")
-		switch cmdSplit[0] {
-		case "ls":
-			if err := e.listFiles(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		case "get":
-			if err := e.getFile(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		case "put":
-			if err := e.putFile(ctx, cmdSplit[1:]); err != nil {
-				ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
-			}
-			break
-		default:
-			ctx.Tracker.Logger().Crit("invalid storage command: `" + cmd + "`. usage: ls/get/put")
-			break
+func (e *Storage) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+	cmdSplit := strings.Split(cmd, " ")
+	switch cmdSplit[0] {
+	case "ls":
+		if err := e.listFiles(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
 		}
+		break
+	case "get":
+		if err := e.getFile(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+		}
+		break
+	case "put":
+		if err := e.putFile(ctx, cmdSplit[1:]); err != nil {
+			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+		}
+		break
+	default:
+		ctx.Tracker.Logger().Crit("invalid storage command: `" + cmd + "`. usage: ls/get/put")
+		break
 	}
-	return nil
+
+	return environment.ExecutionResult{}, nil
 }
 
 // TODO: get this back into the execution context / variables?
-func (e *Storage) listFiles(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) listFiles(ctx *pipeline.ExecutionContext, args []string) error {
 	if len(args) > 0 {
 		return errors.New("ls command does not have any parameters")
 	}
@@ -89,7 +89,7 @@ func (e *Storage) listFiles(ctx pipeline.ExecutionContext, args []string) error 
 	return nil
 }
 
-func (e *Storage) getFile(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) getFile(ctx *pipeline.ExecutionContext, args []string) error {
 	// TODO: handle multiple files (wildcards?)
 	// TODO: handle get [filename] [outfilename]
 	if len(args) != 1 {
@@ -115,7 +115,7 @@ func (e *Storage) getFile(ctx pipeline.ExecutionContext, args []string) error {
 	return os.Remove(tempFile)
 }
 
-func (e *Storage) putFile(ctx pipeline.ExecutionContext, args []string) error {
+func (e *Storage) putFile(ctx *pipeline.ExecutionContext, args []string) error {
 	// TODO: handle multiple files (wildcards?)
 	// TODO: handle put [filename] [outfilename]
 	if len(args) != 1 {

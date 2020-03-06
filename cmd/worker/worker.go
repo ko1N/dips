@@ -43,12 +43,8 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 	}
 
 	// execute pipeline on engine
-	ctx := pipeline.ExecutionContext{
-		JobID:    msg.ID,
-		Pipeline: pipe,
-		Tracker:  tracker,
-	}
-	err = engine.ExecutePipeline(ctx)
+	exec := engine.CreateExecution(msg.ID, pipe, tracker)
+	err = exec.Run()
 	if err != nil {
 		tracker.Logger().Crit("unable to execute pipeline", "error", err)
 		return
