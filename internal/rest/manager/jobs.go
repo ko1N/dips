@@ -1,6 +1,14 @@
 package manager
 
-import ()
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gopkg.in/mgo.v2/bson"
+)
 
 // ExecuteJobMessage - message which will be sent when a pipeline should be executed
 type ExecuteJobMessage struct {

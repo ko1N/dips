@@ -1,6 +1,6 @@
 package model
 
-import ()
+import "github.com/zebresel-com/mongodm"
 
 // TODO: properties struct
 // TODO: task struct should contain all necessary infos + unique ids
@@ -10,14 +10,14 @@ type Pipeline struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
 	Script               string `json:"script" bson:"script" required:"true"`
 	// TODO: properties
-	Script string           `json:"name" bson:"name" required:"true"`
+	Name   string           `json:"name" bson:"name" required:"true"`
 	Stages []*PipelineStage `json:"stages" bson:"stages"`
 }
 
 // PipelineStage - Database struct describing a pipeline stage
 type PipelineStage struct {
 	Name  string          `json:"name" bson:"name" required:"true"`
-	Tasks []*JobStageTask `json:"tasks" bson:"tasks"`
+	Tasks []*PipelineTask `json:"tasks" bson:"tasks"`
 }
 
 // PipelineTask - Database struct describing a pipeline stage task

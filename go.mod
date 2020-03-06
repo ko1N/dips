@@ -24,6 +24,7 @@ require (
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/jessevdk/go-flags v1.4.0
+	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/mattn/go-colorable v0.1.4
 	github.com/mattn/go-isatty v0.0.12 // indirect
