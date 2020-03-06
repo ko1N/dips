@@ -8,7 +8,7 @@ worker:
 - the pipeline should have a set of default env variables (e.g. container id for docker or env name)
 - config should specify the use of a gpu, pipelines with gpu requirements will be forced on workers with a gpu installed
 - buffer tracking messages before sending them to fast
-- logfile with log rotation
+- log file with log rotation
 - keep local database (e.g. store docker containers in db so we can clean them up in case of a crash!)
 
 manager:
@@ -21,6 +21,8 @@ manager:
 - give each running pipeline a tracking id and send it to a worker
 - list pagination: https://github.com/moehlone/mongodm-example/blob/master/controllers/user.go
 - store secrets and send them to the worker (e.g. git credentials, docker login, etc)
+- store database object of pipeline and manage them
+- start a pipeline with a registered pipeline + just start any job
 
 event-tracking:
 - log messages
@@ -35,7 +37,10 @@ pipelines:
 - specify gpu use
 - specify required docker registry for the given image (and provide a way to configure credentials in the manager and send them to the workers for each pipeline)
 - how can we handle pipelines which could scale to multiple servers (e.g. blender crowdrender)?
-- properly track pwd
+- properly track pwdh
+
+tasks:
+- should be made generic and should be derived/extended in case task is async/has when condition/etc
 
 environment/docker:
 - cd does not change pwd
@@ -43,9 +48,6 @@ environment/docker:
 extensions/wget:
 - error is not handled properly
 - should be installed automatically or give a proper error...
-
-extensions:
-- hook for start/stop pipelines
 
 structure:
 - /configs for default configs

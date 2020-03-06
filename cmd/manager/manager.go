@@ -28,6 +28,7 @@ import (
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
 // generate crud wrappers
+//go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Pipeline -output  ../../internal/persistence/database/crud/pipeline.go
 //go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/database/crud/job.go
 
 type config struct {

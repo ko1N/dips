@@ -15,8 +15,8 @@ import (
 )
 
 type config struct {
-	AMQP    amqp.Config          `json:"amqp" toml:"amqp"`
-	Storage *storage.MinIOConfig `json:"storage" toml:"storage"`
+	AMQP  amqp.Config          `json:"amqp" toml:"amqp"`
+	MinIO *storage.MinIOConfig `json:"minio" toml:"minio"`
 }
 
 // amqp channels
