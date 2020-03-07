@@ -13,9 +13,9 @@ import (
 type ExecutionContext struct {
 	Engine      *Engine
 	JobID       string
-	Pipeline    Pipeline                // TODO ptr?
-	Tracker     JobTracker              // TODO ptr?
-	Environment environment.Environment // TODO ptr?
+	Pipeline    *Pipeline
+	Tracker     JobTracker
+	Environment environment.Environment
 	Variables   map[string]tengo.Object
 }
 

@@ -26,25 +26,21 @@ var sendJobStatus chan string
 // TODO: send status updates containing log messages
 // TODO: send status updates containing raw cmd exec log
 func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string) {
-	msg := manager.ExecuteJobMessage{}
+	msg := manager.ExecutePipelineMessage{}
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
 		srvlog.Crit("unable to unmarshal payload", "error", err)
 		return
 	}
 
 	// create logging instance for this pipeline
-	tracker := pipeline.CreateJobTracker(srvlog, sendJobStatus, msg.ID)
-
-	// parse pipeline script
-	pipe, err := pipeline.CreateFromBytes([]byte(msg.Pipeline))
-	if err != nil {
-		tracker.Logger().Crit("unable to parse pipeline file", "error", err)
-		return
-	}
+	tracker := pipeline.CreateJobTracker(srvlog, sendJobStatus, msg.Job.Id.Hex())
 
 	// execute pipeline on engine
-	exec := engine.CreateExecution(msg.ID, pipe, tracker)
-	err = exec.Run()
+	exec := engine.CreateExecution(
+		msg.Job.Id.Hex(),
+		msg.Job.Pipeline.Pipeline,
+		tracker)
+	err := exec.Run()
 	if err != nil {
 		tracker.Logger().Crit("unable to execute pipeline", "error", err)
 		return
@@ -74,8 +70,8 @@ func main() {
 		RegisterExtension(&modules.FFMpeg{})
 
 	// setup storage
-	if conf.Storage != nil {
-		store, err := storage.ConnectMinIO(*conf.Storage)
+	if conf.MinIO != nil {
+		store, err := storage.ConnectMinIO(*conf.MinIO)
 		if err != nil {
 			srvlog.Crit("Could not connect to minio storage server", "error", err)
 			return

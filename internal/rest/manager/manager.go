@@ -17,6 +17,17 @@ var jobs crud.JobWrapper
 var sendPipelineExecute chan string
 var recvPipelineStatus chan string
 
+// SuccessResponse - reponse for a successful operation
+type SuccessResponse struct {
+	Status string `json:"status"`
+}
+
+// FailureResponse - response for a failed operation
+type FailureResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 // CreateManagerAPI - adds the manager api to a gin engine
 func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) error {
 	// setup database
@@ -32,12 +43,14 @@ func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) err
 
 	// setup rest routes
 	r.POST("/manager/pipeline/", PipelineCreate)
-	// TODO: PipelineList
+	r.GET("/manager/pipeline/all", PipelineList)
 	// TODO: PipelineGet ?
 	// TODO: PipelineUpdate
 	// TODO: PipelineDelete
 
-	r.POST("/manager/job/execute", ExecuteJob)
+	r.POST("/manager/pipeline/execute/:pipeline_id", PipelineExecute)
+
+	//r.POST("/manager/job/execute", ExecuteJob)
 	r.GET("/manager/job/list", JobList) // TODO: /list/running, /finished, etc
 	r.GET("/manager/job/info/:id", JobInfo)
 

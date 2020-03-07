@@ -9,44 +9,45 @@ import (
 
 // Variable -
 type Variable struct {
-	Name  string
-	Value string
+	Name  string `json:"name" bson:"name"`
+	Value string `json:"value" bson:"value"`
 }
 
 // Command -
 type Command struct {
-	Name  string
-	Lines []string
+	Name  string   `json:"name" bson:"name"`
+	Lines []string `json:"lines" bson:"lines"`
 }
 
 // Task -
 type Task struct {
-	Name         string
-	Command      []Command
-	IgnoreErrors bool
-	Register     string   // VariableRef
-	Notify       []string // NotifyRef
-	When         Expression
+	Name         string     `json:"name" bson:"name"`
+	Command      []Command  `json:"command" bson:"command"`
+	IgnoreErrors bool       `json:"ignore_errors" bson:"ignore_errors"`
+	Register     string     `json:"register" bson:"register"` // VariableRef
+	Notify       []string   `json:"notify" bson:"notify"`     // NotifyRef
+	When         Expression `json:"when" bson:"when"`
 }
 
 // Stage -
 type Stage struct {
-	Name        string
-	Environment string
-	Tasks       []Task
-	Variables   []Variable
+	Name        string     `json:"name" bson:"name"`
+	Environment string     `json:"environment" bson:"environment"`
+	Tasks       []Task     `json:"tasks" bson:"tasks"`
+	Variables   []Variable `json:"variables" bson:"variables"`
 }
 
 // Pipeline -
 type Pipeline struct {
-	Stages []Stage
+	Name   string  `json:"name" bson:"name"`
+	Stages []Stage `json:"stages" bson:"stages"`
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
 func CreateFromBytes(data []byte) (Pipeline, error) {
 	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
-		return Pipeline{}, errors.New("not a valid pipeline script. should start with `---`")
+		return Pipeline{}, errors.New("Not a valid pipeline script. should start with `---`")
 	}
 
 	var script interface{}
@@ -55,18 +56,30 @@ func CreateFromBytes(data []byte) (Pipeline, error) {
 		return Pipeline{}, err
 	}
 
-	return parsePipeline(script)
+	if s, ok := script.(map[interface{}]interface{}); ok {
+		return parsePipeline(s)
+	}
+
+	return Pipeline{}, errors.New("Not a valid pipeline script. Script should start with `name:` or `stages:`")
 }
 
-func parsePipeline(script interface{}) (Pipeline, error) {
+func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
 	result := Pipeline{}
-	for _, s := range script.([]interface{}) {
-		stage, err := parseStage(s.(map[interface{}]interface{}))
-		if err != nil {
-			return result, err
-		}
-		result.Stages = append(result.Stages, stage)
+
+	if name, ok := script["name"]; ok {
+		result.Name = name.(string)
 	}
+
+	if stages, ok := script["stages"]; ok {
+		for _, s := range stages.([]interface{}) {
+			stage, err := parseStage(s.(map[interface{}]interface{}))
+			if err != nil {
+				return result, err
+			}
+			result.Stages = append(result.Stages, stage)
+		}
+	}
+
 	return result, nil
 }
 

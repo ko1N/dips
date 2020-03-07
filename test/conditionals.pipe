@@ -1,4 +1,6 @@
 ---
+name: conditionals
+stages:
 - stage: testing conditional execution
   environment: docker/alpine:latest
   tasks:
@@ -10,4 +12,3 @@
 
   - shell: /usr/bin/bar
     when: foo_result.rc == 5
-

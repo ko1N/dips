@@ -22,7 +22,7 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 }
 
 // CreateExecution - creates a new execution context
-func (e *Engine) CreateExecution(jobID string, pipeline Pipeline, tracker JobTracker) ExecutionContext {
+func (e *Engine) CreateExecution(jobID string, pipeline *Pipeline, tracker JobTracker) ExecutionContext {
 	return ExecutionContext{
 		Engine:   e,
 		JobID:    jobID,

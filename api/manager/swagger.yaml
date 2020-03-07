@@ -20,6 +20,26 @@ definitions:
           $ref: '#/definitions/model.Job'
         type: array
     type: object
+  manager.PipelineCreateResponse:
+    properties:
+      pipeline:
+        $ref: '#/definitions/model.Pipeline'
+        type: object
+      status:
+        type: string
+    type: object
+  manager.PipelineExecuteRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  manager.PipelineListResponse:
+    properties:
+      pipelines:
+        items:
+          $ref: '#/definitions/model.Pipeline'
+        type: array
+    type: object
   manager.SuccessResponse:
     properties:
       status:
@@ -31,48 +51,96 @@ definitions:
         type: string
       id:
         type: string
-      logs:
-        items:
-          type: string
-        type: array
-      pipeline:
+      name:
         type: string
-      progress:
-        type: integer
-      stages:
-        items:
-          $ref: '#/definitions/model.JobStage'
-        type: array
+      pipeline:
+        $ref: '#/definitions/model.Pipeline'
+        type: object
       updatedAt:
         type: string
     type: object
-  model.JobStage:
+  model.Pipeline:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      pipeline:
+        $ref: '#/definitions/pipeline.Pipeline'
+        type: object
+      script:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  pipeline.Command:
+    properties:
+      lines:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+    type: object
+  pipeline.Expression:
+    properties:
+      script:
+        type: string
+    type: object
+  pipeline.Pipeline:
     properties:
       name:
         type: string
-      progress:
-        type: integer
-      tasks:
+      stages:
         items:
-          $ref: '#/definitions/model.JobStageTask'
+          $ref: '#/definitions/pipeline.Stage'
         type: array
     type: object
-  model.JobStageTask:
+  pipeline.Stage:
     properties:
-      id:
-        type: integer
+      environment:
+        type: string
       name:
         type: string
-      progress:
-        type: integer
-      stderr:
+      tasks:
+        items:
+          $ref: '#/definitions/pipeline.Task'
+        type: array
+      variables:
+        items:
+          $ref: '#/definitions/pipeline.Variable'
+        type: array
+    type: object
+  pipeline.Task:
+    properties:
+      command:
+        items:
+          $ref: '#/definitions/pipeline.Command'
+        type: array
+      ignore_errors:
+        type: boolean
+      name:
+        type: string
+      notify:
+        description: NotifyRef
         items:
           type: string
         type: array
-      stdout:
-        items:
-          type: string
-        type: array
+      register:
+        description: VariableRef
+        type: string
+      when:
+        $ref: '#/definitions/pipeline.Expression'
+        type: object
+    type: object
+  pipeline.Variable:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
     type: object
 info:
   contact: {}
@@ -81,33 +149,6 @@ info:
   title: dips
   version: "0.1"
 paths:
-  /manager/job/execute:
-    post:
-      consumes:
-      - text/plain
-      description: This method will execute the job sent via the post body
-      operationId: execute-job
-      parameters:
-      - description: Pipeline Script
-        in: body
-        name: pipeline
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/manager.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/manager.FailureResponse'
-      summary: executes a job
-      tags:
-      - jobs
   /manager/job/info/{job_id}:
     get:
       description: This method will return a single job by it's id or an error.
@@ -150,4 +191,63 @@ paths:
       summary: lists all jobs
       tags:
       - jobs
+  /manager/pipeline/:
+    post:
+      consumes:
+      - text/plain
+      description: This method will create the pipeline sent via the post body
+      operationId: create-pipeline
+      parameters:
+      - description: Pipeline Script
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.PipelineCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: creates a pipeline
+      tags:
+      - pipelines
+  /manager/pipeline/execute/{pipeline_id}:
+    post:
+      consumes:
+      - text/plain
+      description: This method will execute the pipeline with the given id
+      operationId: pipeline-execute
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          $ref: '#/definitions/manager.PipelineExecuteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: executes a pipeline
+      tags:
+      - pipelines
 swagger: "2.0"

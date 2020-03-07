@@ -6,19 +6,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // list pipelines register pipelines, update pipelines, unregister pipelines
+
+// PipelineCreateResponse - reponse for a successful pipeline creation
+type PipelineCreateResponse struct {
+	Status   string         `json:"status"`
+	Pipeline model.Pipeline `json:"pipeline"`
+}
 
 // PipelineCreate - creates a pipeline
 // @Summary creates a pipeline
 // @Description This method will create the pipeline sent via the post body
 // @ID create-pipeline
-// @Tags pipeline
+// @Tags pipelines
 // @Accept plain
 // @Produce json
 // @Param pipeline body string true "Pipeline Script"
-// @Success 200 {object} SuccessResponse
+// @Success 200 {object} PipelineCreateResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/ [post]
 func PipelineCreate(c *gin.Context) {
@@ -43,25 +50,13 @@ func PipelineCreate(c *gin.Context) {
 
 	// TODO: create func for this...
 	// write pipeline to database
-	pipeline := model.Pipeline{
-		Script: string(body),
-	}
-	var taskID uint
-	for _, stage := range pi.Stages {
-		js := model.PipelineStage{
-			Name: stage.Name,
-		}
-		for _, task := range stage.Tasks {
-			js.Tasks = append(js.Tasks, &model.PipelineTask{
-				ID:   taskID,
-				Name: task.Name,
-			})
-			taskID++
-		}
-		pipeline.Stages = append(pipeline.Stages, &js)
+	pl := model.Pipeline{
+		Script:   string(body),
+		Name:     pi.Name,
+		Pipeline: &pi,
 	}
 
-	err = pipelines.CreatePipeline(&pipeline)
+	err = pipelines.CreatePipeline(&pl)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to create database entry for pipeline",
@@ -70,7 +65,40 @@ func PipelineCreate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Status: "pipeline created",
+	c.JSON(http.StatusOK, PipelineCreateResponse{
+		Status:   "pipeline created",
+		Pipeline: pl,
+	})
+}
+
+// PipelineListResponse - response with a list of pipelines
+type PipelineListResponse struct {
+	Pipelines []*model.Pipeline `json:"pipelines"`
+}
+
+// PipelineList - lists all registered pipelines
+// @Summary lists all registered pipelines
+// @Description This method will return a list of all registered pipelines
+// @ID pipeline-list
+// @Tags pipelines
+// @Produce json
+// @Success 200 {object} PipelineListResponse
+// @Failure 400 {object} FailureResponse
+// @Router /manager/job/list [get]
+func PipelineList(c *gin.Context) {
+	// TODO: pagination
+	pipelineList := []*model.Pipeline{}
+	err := pipelines.FindPipelinesQuery().
+		Select(bson.M{"name": true}).
+		Exec(&pipelineList)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find any pipelines",
+			Error:  err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, PipelineListResponse{
+		Pipelines: pipelineList,
 	})
 }

@@ -7,15 +7,17 @@ import "github.com/zebresel-com/mongodm"
 
 // TODO: Name + initial variables of job should be tracked
 
+// TODO: cross reference pipeline from job...
+// TODO: would it be better to copy a pipeline here so if we change the pipeline this job wont be affected?
+
 // Job - Database struct describing a pipeline job
 type Job struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
-	Pipeline             string      `json:"pipeline" bson:"pipeline" required:"true"`
-	Progress             uint        `json:"progress" bson:"progress"`
-	Logs                 []string    `json:"logs" bson:"logs"`
-	Stages               []*JobStage `json:"stages" bson:"stages"`
+	Name                 string    `json:"name" bson:"Name"`
+	Pipeline             *Pipeline `json:"pipeline" bson:"pipeline"`
 }
 
+/*
 // JobStage - Database struct describing a job stage
 type JobStage struct {
 	Name     string          `json:"name" bson:"name" required:"true"`
@@ -31,3 +33,4 @@ type JobStageTask struct {
 	StdOut   []string `json:"stdout" bson:"stdout"`
 	StdErr   []string `json:"stderr" bson:"stderr"`
 }
+*/
