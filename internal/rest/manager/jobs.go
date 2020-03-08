@@ -21,7 +21,7 @@ type JobListResponse struct {
 // @Produce json
 // @Success 200 {object} JobListResponse
 // @Failure 400 {object} FailureResponse
-// @Router /manager/job/list [get]
+// @Router /manager/job/all [get]
 func JobList(c *gin.Context) {
 	// TODO: pagination
 	jobList := []*model.Job{}
@@ -40,24 +40,23 @@ func JobList(c *gin.Context) {
 	})
 }
 
-// JobInfoResponse - response for a failed operation
-type JobInfoResponse struct {
+// JobDetailsResponse - response with job details
+type JobDetailsResponse struct {
 	Job *model.Job `json:"job"`
-	// TODO: log?
 }
 
-// JobInfo - find a single job by it's id
-// @Summary find a single job by it's id
+// JobDetails - find a single job by it's id and shows all fields
+// @Summary find a single job by it's id and shows all fields
 // @Description This method will return a single job by it's id or an error.
-// @ID job-info
+// @ID job-details
 // @Tags jobs
 // @Produce json
 // @Param job_id path string true "Job ID"
-// @Success 200 {object} JobInfoResponse
+// @Success 200 {object} JobDetailsResponse
 // @Failure 400 {object} FailureResponse
-// @Router /manager/job/info/{job_id} [get]
-func JobInfo(c *gin.Context) {
-	id := c.Param("id")
+// @Router /manager/job/details/{job_id} [get]
+func JobDetails(c *gin.Context) {
+	id := c.Param("job_id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "invalid job id",
@@ -75,7 +74,7 @@ func JobInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, JobInfoResponse{
+	c.JSON(http.StatusOK, JobDetailsResponse{
 		Job: job,
 	})
 }

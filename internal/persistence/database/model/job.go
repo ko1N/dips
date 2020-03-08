@@ -16,21 +16,3 @@ type Job struct {
 	Name                 string    `json:"name" bson:"Name"`
 	Pipeline             *Pipeline `json:"pipeline" bson:"pipeline"`
 }
-
-/*
-// JobStage - Database struct describing a job stage
-type JobStage struct {
-	Name     string          `json:"name" bson:"name" required:"true"`
-	Progress uint            `json:"progress" bson:"progress"`
-	Tasks    []*JobStageTask `json:"tasks" bson:"tasks"`
-}
-
-// JobStageTask - Database struct describing a stage task
-type JobStageTask struct {
-	ID       uint     `json:"id" bson:"id" required:"true"`
-	Name     string   `json:"name" bson:"name" required:"true"`
-	Progress uint     `json:"progress" bson:"progress"`
-	StdOut   []string `json:"stdout" bson:"stdout"`
-	StdErr   []string `json:"stderr" bson:"stderr"`
-}
-*/

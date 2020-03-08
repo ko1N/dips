@@ -20,7 +20,7 @@ type PipelineCreateResponse struct {
 // PipelineCreate - creates a pipeline
 // @Summary creates a pipeline
 // @Description This method will create the pipeline sent via the post body
-// @ID create-pipeline
+// @ID pipeline-create
 // @Tags pipelines
 // @Accept plain
 // @Produce json
@@ -108,8 +108,8 @@ type PipelineDetailsResponse struct {
 	Pipeline *model.Pipeline `json:"pipeline"`
 }
 
-// PipelineDetails - find a pipeline by it's id and show all fields
-// @Summary find a pipeline by it's id and show all fields
+// PipelineDetails - find a pipeline by it's id and shows all fields
+// @Summary find a pipeline by it's id and shows all fields
 // @Description This method will return a single pipeline by it's id or an error.
 // @ID pipeline-details
 // @Tags pipelines

@@ -7,7 +7,7 @@ definitions:
       status:
         type: string
     type: object
-  manager.JobInfoResponse:
+  manager.JobDetailsResponse:
     properties:
       job:
         $ref: '#/definitions/model.Job'
@@ -157,31 +157,7 @@ info:
   title: dips
   version: "0.1"
 paths:
-  /manager/job/info/{job_id}:
-    get:
-      description: This method will return a single job by it's id or an error.
-      operationId: job-info
-      parameters:
-      - description: Job ID
-        in: path
-        name: job_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/manager.JobInfoResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/manager.FailureResponse'
-      summary: find a single job by it's id
-      tags:
-      - jobs
-  /manager/job/list:
+  /manager/job/all:
     get:
       description: This method will return a list of all jobs
       operationId: job-list
@@ -199,12 +175,36 @@ paths:
       summary: lists all jobs
       tags:
       - jobs
+  /manager/job/details/{job_id}:
+    get:
+      description: This method will return a single job by it's id or an error.
+      operationId: job-details
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.JobDetailsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: find a single job by it's id and shows all fields
+      tags:
+      - jobs
   /manager/pipeline/:
     post:
       consumes:
       - text/plain
       description: This method will create the pipeline sent via the post body
-      operationId: create-pipeline
+      operationId: pipeline-create
       parameters:
       - description: Pipeline Script
         in: body
@@ -320,7 +320,7 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/manager.FailureResponse'
-      summary: find a pipeline by it's id and show all fields
+      summary: find a pipeline by it's id and shows all fields
       tags:
       - pipelines
   /manager/pipeline/execute/{pipeline_id}:
@@ -337,7 +337,7 @@ paths:
         type: string
       - description: Request Body
         in: body
-        name: pipeline
+        name: execute_request
         required: true
         schema:
           $ref: '#/definitions/manager.PipelineExecuteRequest'

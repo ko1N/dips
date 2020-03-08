@@ -26,7 +26,7 @@ type ExecutePipelineMessage struct {
 // @Accept json
 // @Produce json
 // @Param pipeline_id path string true "Pipeline ID"
-// @Param pipeline body PipelineExecuteRequest true "Request Body"
+// @Param execute_request body PipelineExecuteRequest true "Request Body"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/execute/{pipeline_id} [post]

@@ -9,43 +9,7 @@
     },
     "basePath": "/",
     "paths": {
-        "/manager/job/info/{job_id}": {
-            "get": {
-                "description": "This method will return a single job by it's id or an error.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "jobs"
-                ],
-                "summary": "find a single job by it's id",
-                "operationId": "job-info",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Job ID",
-                        "name": "job_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/manager.JobInfoResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/manager.FailureResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/manager/job/list": {
+        "/manager/job/all": {
             "get": {
                 "description": "This method will return a list of all jobs",
                 "produces": [
@@ -72,6 +36,42 @@
                 }
             }
         },
+        "/manager/job/details/{job_id}": {
+            "get": {
+                "description": "This method will return a single job by it's id or an error.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "find a single job by it's id and shows all fields",
+                "operationId": "job-details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.JobDetailsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/manager.FailureResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/manager/pipeline/": {
             "post": {
                 "description": "This method will create the pipeline sent via the post body",
@@ -85,7 +85,7 @@
                     "pipelines"
                 ],
                 "summary": "creates a pipeline",
-                "operationId": "create-pipeline",
+                "operationId": "pipeline-create",
                 "parameters": [
                     {
                         "description": "Pipeline Script",
@@ -149,7 +149,7 @@
                 "tags": [
                     "pipelines"
                 ],
-                "summary": "find a pipeline by it's id and show all fields",
+                "summary": "find a pipeline by it's id and shows all fields",
                 "operationId": "pipeline-details",
                 "parameters": [
                     {
@@ -200,7 +200,7 @@
                     },
                     {
                         "description": "Request Body",
-                        "name": "pipeline",
+                        "name": "execute_request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -319,7 +319,7 @@
                 }
             }
         },
-        "manager.JobInfoResponse": {
+        "manager.JobDetailsResponse": {
             "type": "object",
             "properties": {
                 "job": {

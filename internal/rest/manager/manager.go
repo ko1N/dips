@@ -52,9 +52,8 @@ func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) err
 
 	r.POST("/manager/pipeline/execute/:pipeline_id", PipelineExecute)
 
-	//r.POST("/manager/job/execute", ExecuteJob)
-	r.GET("/manager/job/list", JobList) // TODO: /list/running, /finished, etc
-	r.GET("/manager/job/info/:id", JobInfo)
+	r.GET("/manager/job/all", JobList) // TODO: add more queries, running, finished, etc
+	r.GET("/manager/job/details/:job_id", JobDetails)
 
 	return nil
 }
