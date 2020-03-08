@@ -12,6 +12,7 @@ import (
 type Pipeline struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
 	Script               string             `json:"script" bson:"script" required:"true"`
+	Revision             uint               `json:"revision" bson:"revision" required:"true"`
 	Name                 string             `json:"name" bson:"name" required:"true"`
 	Pipeline             *pipeline.Pipeline `json:"pipeline" bson:"pipeline"`
 	// TODO: properties

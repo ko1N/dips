@@ -25,7 +25,7 @@ type JobListResponse struct {
 func JobList(c *gin.Context) {
 	// TODO: pagination
 	jobList := []*model.Job{}
-	err := jobs.FindJobsQuery().
+	err := jobs.FindJobsQuery(bson.M{"deleted": false}).
 		Select(bson.M{"name": true, "progress": true}).
 		Exec(&jobList)
 	if err != nil {

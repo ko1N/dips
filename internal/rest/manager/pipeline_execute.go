@@ -23,7 +23,7 @@ type ExecutePipelineMessage struct {
 // @Description This method will execute the pipeline with the given id
 // @ID pipeline-execute
 // @Tags pipelines
-// @Accept plain
+// @Accept json
 // @Produce json
 // @Param pipeline_id path string true "Pipeline ID"
 // @Param pipeline body PipelineExecuteRequest true "Request Body"

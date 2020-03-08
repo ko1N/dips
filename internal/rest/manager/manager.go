@@ -44,7 +44,9 @@ func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) err
 	// setup rest routes
 	r.POST("/manager/pipeline/", PipelineCreate)
 	r.GET("/manager/pipeline/all", PipelineList)
-	// TODO: PipelineGet ?
+	r.GET("/manager/pipeline/details/:pipeline_id", PipelineDetails)
+	r.PATCH("/manager/pipeline/:pipeline_id", PipelineUpdate)
+	r.DELETE("/manager/pipeline/:pipeline_id", PipelineDelete)
 	// TODO: PipelineUpdate
 	// TODO: PipelineDelete
 

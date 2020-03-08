@@ -28,6 +28,12 @@ definitions:
       status:
         type: string
     type: object
+  manager.PipelineDetailsResponse:
+    properties:
+      pipeline:
+        $ref: '#/definitions/model.Pipeline'
+        type: object
+    type: object
   manager.PipelineExecuteRequest:
     properties:
       name:
@@ -70,6 +76,8 @@ definitions:
       pipeline:
         $ref: '#/definitions/pipeline.Pipeline'
         type: object
+      revision:
+        type: integer
       script:
         type: string
       updatedAt:
@@ -218,10 +226,107 @@ paths:
       summary: creates a pipeline
       tags:
       - pipelines
+  /manager/pipeline/{pipeline_id}:
+    delete:
+      description: This method will delete the given pipeline
+      operationId: pipeline-delete
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: deletes the pipeline with the given id
+      tags:
+      - pipelines
+    patch:
+      consumes:
+      - text/plain
+      description: This method will update the given pipeline from a provided script
+      operationId: pipeline-update
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      - description: Pipeline Script
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.PipelineDetailsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: updates the pipeline with the given id
+      tags:
+      - pipelines
+  /manager/pipeline/all:
+    get:
+      description: This method will return a list of all registered pipelines
+      operationId: pipeline-list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.PipelineListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: lists all registered pipelines
+      tags:
+      - pipelines
+  /manager/pipeline/details/{pipeline_id}:
+    get:
+      description: This method will return a single pipeline by it's id or an error.
+      operationId: pipeline-details
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.PipelineDetailsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/manager.FailureResponse'
+      summary: find a pipeline by it's id and show all fields
+      tags:
+      - pipelines
   /manager/pipeline/execute/{pipeline_id}:
     post:
       consumes:
-      - text/plain
+      - application/json
       description: This method will execute the pipeline with the given id
       operationId: pipeline-execute
       parameters:

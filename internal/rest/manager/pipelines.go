@@ -48,10 +48,10 @@ func PipelineCreate(c *gin.Context) {
 		return
 	}
 
-	// TODO: create func for this...
 	// write pipeline to database
 	pl := model.Pipeline{
 		Script:   string(body),
+		Revision: 0,
 		Name:     pi.Name,
 		Pipeline: &pi,
 	}
@@ -84,11 +84,11 @@ type PipelineListResponse struct {
 // @Produce json
 // @Success 200 {object} PipelineListResponse
 // @Failure 400 {object} FailureResponse
-// @Router /manager/job/list [get]
+// @Router /manager/pipeline/all [get]
 func PipelineList(c *gin.Context) {
 	// TODO: pagination
 	pipelineList := []*model.Pipeline{}
-	err := pipelines.FindPipelinesQuery().
+	err := pipelines.FindPipelinesQuery(bson.M{"deleted": false}).
 		Select(bson.M{"name": true}).
 		Exec(&pipelineList)
 	if err != nil {
@@ -100,5 +100,162 @@ func PipelineList(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, PipelineListResponse{
 		Pipelines: pipelineList,
+	})
+}
+
+// PipelineDetailsResponse - response with pipeline details
+type PipelineDetailsResponse struct {
+	Pipeline *model.Pipeline `json:"pipeline"`
+}
+
+// PipelineDetails - find a pipeline by it's id and show all fields
+// @Summary find a pipeline by it's id and show all fields
+// @Description This method will return a single pipeline by it's id or an error.
+// @ID pipeline-details
+// @Tags pipelines
+// @Produce json
+// @Param pipeline_id path string true "Pipeline ID"
+// @Success 200 {object} PipelineDetailsResponse
+// @Failure 400 {object} FailureResponse
+// @Router /manager/pipeline/details/{pipeline_id} [get]
+func PipelineDetails(c *gin.Context) {
+	id := c.Param("pipeline_id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "invalid pipeline id",
+			Error:  "pipeline id must not be empty",
+		})
+		return
+	}
+
+	pipe, err := pipelines.FindPipelineByID(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find pipeline with id `" + id + "`",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, PipelineDetailsResponse{
+		Pipeline: pipe,
+	})
+}
+
+// PipelineUpdate - updates the pipeline with the given id
+// @Summary updates the pipeline with the given id
+// @Description This method will update the given pipeline from a provided script
+// @ID pipeline-update
+// @Tags pipelines
+// @Accept plain
+// @Produce json
+// @Param pipeline_id path string true "Pipeline ID"
+// @Param pipeline body string true "Pipeline Script"
+// @Success 200 {object} PipelineDetailsResponse
+// @Failure 400 {object} FailureResponse
+// @Router /manager/pipeline/{pipeline_id} [patch]
+func PipelineUpdate(c *gin.Context) {
+	// read pipeline from db
+	id := c.Param("pipeline_id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "invalid pipeline id",
+			Error:  "pipeline id must not be empty",
+		})
+		return
+	}
+
+	pipe, err := pipelines.FindPipelineByID(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find pipeline with id `" + id + "`",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	// parse body
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to read post body",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	// validate body
+	pi, err := pipeline.CreateFromBytes(body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to parse pipeline",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	if pipe.Script != string(body) {
+		// update pipeline script
+		pipe.Script = string(body)
+		pipe.Revision = pipe.Revision + 1
+		pipe.Name = pi.Name
+		pipe.Pipeline = &pi
+
+		err = pipe.Save()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, FailureResponse{
+				Status: "unable to update database entry for pipeline",
+				Error:  err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, PipelineDetailsResponse{
+		Pipeline: pipe,
+	})
+}
+
+// PipelineDelete - deletes the pipeline with the given id
+// @Summary deletes the pipeline with the given id
+// @Description This method will delete the given pipeline
+// @ID pipeline-delete
+// @Tags pipelines
+// @Produce json
+// @Param pipeline_id path string true "Pipeline ID"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} FailureResponse
+// @Router /manager/pipeline/{pipeline_id} [delete]
+func PipelineDelete(c *gin.Context) {
+	// read pipeline from db
+	id := c.Param("pipeline_id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "invalid pipeline id",
+			Error:  "pipeline id must not be empty",
+		})
+		return
+	}
+
+	pipe, err := pipelines.FindPipelineByID(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find pipeline with id `" + id + "`",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	err = pipe.Delete()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to delete database entry for pipeline",
+			Error:  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, SuccessResponse{
+		Status: "pipeline `" + id + "` deleted",
 	})
 }
