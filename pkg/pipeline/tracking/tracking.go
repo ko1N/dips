@@ -1,4 +1,4 @@
-package pipeline
+package tracking
 
 import (
 	"encoding/json"
@@ -53,10 +53,16 @@ type JobStatusMessage struct {
 type JobMessageType uint
 
 const (
+	// JobMessageStatus - stderr message
+	JobMessageStatus JobMessageType = 0
+	// JobMessageError - stderr message
+	JobMessageError JobMessageType = 1
+	// JobMessageStdIn - stdin message
+	JobMessageStdIn JobMessageType = 2
 	// JobMessageStdOut - stdout message
-	JobMessageStdOut JobMessageType = 0
+	JobMessageStdOut JobMessageType = 3
 	// JobMessageStdErr - stderr message
-	JobMessageStdErr JobMessageType = 1
+	JobMessageStdErr JobMessageType = 4
 )
 
 // JobMessage - describes a jobs message
@@ -96,6 +102,7 @@ func CreateJobTracker(conf JobTrackerConfig) JobTracker {
 	return tracker
 }
 
+// TODO: DEPRECATED - RemoveMe
 // Logger - retruns the jobs logging instance
 func (t *JobTracker) Logger() log.Logger {
 	return t.jobLog
@@ -122,13 +129,18 @@ func (t *JobTracker) TrackProgress(progress uint) {
 	t.config.ProgressChannel <- string(status)
 }
 
-// TrackStdOut - tracks stdout of the current task
-func (t *JobTracker) TrackStdOut(outmsg string) {
+// Message - tracks messages of the current task
+func (t *JobTracker) Message(mt JobMessageType, msg string) {
+	if msg == "" {
+		// do not persist empty messages
+		return
+	}
+
 	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
 	status, err := json.Marshal(JobMessage{
 		JobID:   t.config.JobID,
-		Type:    JobMessageStdOut,
-		Message: outmsg,
+		Type:    mt,
+		Message: msg,
 	})
 	if err != nil {
 		//t.log.Crit("unable to marshal stderr message")
@@ -137,17 +149,33 @@ func (t *JobTracker) TrackStdOut(outmsg string) {
 	t.config.MessageChannel <- string(status)
 }
 
-// TrackStdErr - tracks stderr of the current task
-func (t *JobTracker) TrackStdErr(errmsg string) {
-	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
-	status, err := json.Marshal(JobMessage{
-		JobID:   t.config.JobID,
-		Type:    JobMessageStdErr,
-		Message: errmsg,
-	})
+// Status - tracks a status message
+func (t *JobTracker) Status(msg string) {
+	t.Logger().Info(msg)
+	t.Message(JobMessageStatus, msg)
+}
+
+func (t *JobTracker) Error(msg string, err error) {
 	if err != nil {
-		//t.log.Crit("unable to marshal stderr message")
-		return
+		t.Logger().Crit(msg, "error", err)
+		t.Message(JobMessageError, msg+" ("+err.Error()+")")
+	} else {
+		t.Logger().Crit(msg)
+		t.Message(JobMessageError, msg)
 	}
-	t.config.MessageChannel <- string(status)
+}
+
+// StdIn - tracks a stdin message
+func (t *JobTracker) StdIn(msg string) {
+	t.Message(JobMessageStdIn, msg)
+}
+
+// StdOut - tracks a stdin message
+func (t *JobTracker) StdOut(msg string) {
+	t.Message(JobMessageStdOut, msg)
+}
+
+// StdErr - tracks a stdin message
+func (t *JobTracker) StdErr(msg string) {
+	t.Message(JobMessageStdErr, msg)
 }

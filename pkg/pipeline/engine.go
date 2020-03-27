@@ -1,5 +1,7 @@
 package pipeline
 
+import "gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+
 // Engine - engine instance
 type Engine struct {
 	Extensions []Extension
@@ -22,7 +24,7 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 }
 
 // CreateExecution - creates a new execution context
-func (e *Engine) CreateExecution(jobID string, pipeline *Pipeline, tracker JobTracker) ExecutionContext {
+func (e *Engine) CreateExecution(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) ExecutionContext {
 	return ExecutionContext{
 		Engine:   e,
 		JobID:    jobID,

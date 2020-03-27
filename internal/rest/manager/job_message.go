@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 )
 
 func handleJobMessage() {
 	for status := range recvJobMessage {
-		msg := pipeline.JobMessage{}
+		msg := tracking.JobMessage{}
 		err := json.Unmarshal([]byte(status), &msg)
 		if err != nil {
 			fmt.Printf("unable to unmarshal job message")

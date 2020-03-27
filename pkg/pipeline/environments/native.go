@@ -1,4 +1,4 @@
-package environment
+package environments
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"path"
 
 	"github.com/google/uuid"
-	log "github.com/inconshreveable/log15"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 )
 
 // implements a native environment ("bare metal")
@@ -19,13 +19,16 @@ type NativeEnvironment struct {
 }
 
 // CreateNativeEnvironment -
-func CreateNativeEnvironment(pipelog log.Logger) (NativeEnvironment, error) {
+func CreateNativeEnvironment(tracker tracking.JobTracker) (NativeEnvironment, error) {
+	tracker.Status("creating native environment")
+
 	tempFolder := path.Join(".", "temp", uuid.New().String())
 	err := os.MkdirAll(tempFolder, os.ModePerm)
 	if err != nil {
 		return NativeEnvironment{}, err
 	}
 
+	tracker.Status("created native environment in `" + tempFolder + "`")
 	return NativeEnvironment{
 		PWD: tempFolder,
 	}, nil

@@ -17,8 +17,8 @@ type MessageHandler struct {
 
 // Message - describes a message
 type Message struct {
-	Type    uint   `json:"type"`
-	Message string `json:"message"`
+	Type    uint   `json:"type" bson:"type"`
+	Message string `json:"message" bson:"message"`
 }
 
 // CreateMessageHandler - creates a new messagehandler instance
@@ -54,7 +54,7 @@ func (m *MessageHandler) Store(id string, msg Message) {
 	}
 }
 
-func getColumnIndex(columns []string, name string) int {
+func findColumnIndex(columns []string, name string) int {
 	for idx, column := range columns {
 		if column == name {
 			return idx
@@ -76,8 +76,9 @@ func (m *MessageHandler) GetAll(id string) []Message {
 		for _, result := range response.Results {
 			for _, series := range result.Series {
 				// we enforce a panic if typeIdx or msgIdx wasnt found
-				typeIdx := getColumnIndex(series.Columns, "type")
-				msgIdx := getColumnIndex(series.Columns, "msg")
+				typeIdx := findColumnIndex(series.Columns, "type")
+				msgIdx := findColumnIndex(series.Columns, "msg")
+
 				for _, value := range series.Values {
 					typeVal, _ := value[typeIdx].(json.Number).Int64()
 					res = append(res, Message{
@@ -87,6 +88,7 @@ func (m *MessageHandler) GetAll(id string) []Message {
 				}
 			}
 		}
+
 		return res
 	}
 

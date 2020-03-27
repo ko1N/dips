@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
 )
 
 // pipeline module for shell cmds
@@ -34,18 +34,19 @@ func (e *Shell) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 }
 
 // Execute - Executes the set of commands as shell commands in the environment
-func (e *Shell) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *Shell) Execute(ctx *pipeline.ExecutionContext, cmd string) (environments.ExecutionResult, error) {
 	ctx.Tracker.Logger().Info("executing command `" + cmd + "`")
+	ctx.Tracker.StdIn(cmd)
 	result, err := ctx.Environment.Execute(
 		append([]string{}, "/bin/sh", "-c", cmd),
 		func(outmsg string) {
-			ctx.Tracker.TrackStdOut(outmsg)
+			ctx.Tracker.StdOut(outmsg)
 		},
 		func(errmsg string) {
-			ctx.Tracker.TrackStdErr(errmsg)
+			ctx.Tracker.StdErr(errmsg)
 		})
 	if err != nil {
-		return environment.ExecutionResult{}, err
+		return environments.ExecutionResult{}, err
 	}
 
 	// TODO: move this into engine.go

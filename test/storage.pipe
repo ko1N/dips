@@ -1,4 +1,6 @@
 ---
+name: storage
+stages:
 - stage: testing storage copy from/to
   environment: docker/alpine:latest
   tasks:

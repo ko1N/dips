@@ -13,6 +13,6 @@ import "github.com/zebresel-com/mongodm"
 // Job - Database struct describing a pipeline job
 type Job struct {
 	mongodm.DocumentBase `json:",inline" bson:",inline"`
-	Name                 string    `json:"name" bson:"Name"`
+	Name                 string    `json:"name" bson:"name"`
 	Pipeline             *Pipeline `json:"pipeline" bson:"pipeline"`
 }

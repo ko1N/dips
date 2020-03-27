@@ -9,6 +9,7 @@ import (
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/inconshreveable/log15"
@@ -34,7 +35,7 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 	}
 
 	// create logging instance for this pipeline
-	tracker := pipeline.CreateJobTracker(pipeline.JobTrackerConfig{
+	tracker := tracking.CreateJobTracker(tracking.JobTrackerConfig{
 		Logger:          srvlog,
 		ProgressChannel: sendJobStatus,
 		MessageChannel:  sendJobMessage,

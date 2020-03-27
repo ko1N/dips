@@ -1,4 +1,4 @@
-package environment
+package environments
 
 import "github.com/d5/tengo/v2"
 
