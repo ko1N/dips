@@ -329,7 +329,7 @@
                 "messages": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/messages.Message"
                     }
                 }
             }
@@ -390,6 +390,17 @@
             "properties": {
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "messages.Message": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
                 }
             }
         },

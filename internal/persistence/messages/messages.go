@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,6 +15,12 @@ type MessageHandler struct {
 	Database string
 }
 
+// Message - describes a message
+type Message struct {
+	Type    uint   `json:"type"`
+	Message string `json:"message"`
+}
+
 // CreateMessageHandler - creates a new messagehandler instance
 func CreateMessageHandler(client client.Client, database string) MessageHandler {
 	return MessageHandler{
@@ -23,7 +30,7 @@ func CreateMessageHandler(client client.Client, database string) MessageHandler 
 }
 
 // Store - writes a single message with the given id to the store
-func (m *MessageHandler) Store(id string, msg string) {
+func (m *MessageHandler) Store(id string, msg Message) {
 	bp, _ := client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  m.Database,
 		Precision: "ms",
@@ -32,7 +39,8 @@ func (m *MessageHandler) Store(id string, msg string) {
 	// Create a point and add to batch
 	tags := map[string]string{"log": id}
 	fields := map[string]interface{}{
-		"msg": msg,
+		"type": msg.Type,
+		"msg":  msg.Message,
 	}
 	pt, err := client.NewPoint(id, tags, fields, time.Now())
 	if err != nil {
@@ -46,24 +54,41 @@ func (m *MessageHandler) Store(id string, msg string) {
 	}
 }
 
+func getColumnIndex(columns []string, name string) int {
+	for idx, column := range columns {
+		if column == name {
+			return idx
+		}
+	}
+	return -1
+}
+
 // GetAll - retrieves all messages for the given id from the store
-func (m *MessageHandler) GetAll(id string) []string {
+func (m *MessageHandler) GetAll(id string) []Message {
 	q := client.NewQuery("SELECT * FROM \""+m.Database+"\".\"autogen\".\""+id+"\"", id, "ms")
 	if response, err := m.Client.Query(q); err == nil && response.Error() == nil {
 		if response.Error() != nil {
 			fmt.Println("Error: ", response.Error().Error())
-			return []string{}
+			return []Message{}
 		}
 
-		var res []string
+		var res []Message
 		for _, result := range response.Results {
 			for _, series := range result.Series {
+				// we enforce a panic if typeIdx or msgIdx wasnt found
+				typeIdx := getColumnIndex(series.Columns, "type")
+				msgIdx := getColumnIndex(series.Columns, "msg")
 				for _, value := range series.Values {
-					res = append(res, value[2].(string))
+					typeVal, _ := value[typeIdx].(json.Number).Int64()
+					res = append(res, Message{
+						Type:    uint(typeVal),
+						Message: value[msgIdx].(string),
+					})
 				}
 			}
 		}
 		return res
 	}
-	return []string{}
+
+	return []Message{}
 }

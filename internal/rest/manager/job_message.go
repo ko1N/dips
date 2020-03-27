@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
@@ -16,6 +17,9 @@ func handleJobMessage() {
 			continue
 		}
 
-		messageHandler.Store(msg.JobID, msg.Message) // TODO: track type stderr/out
+		messageHandler.Store(msg.JobID, messages.Message{
+			Type:    uint(msg.Type),
+			Message: msg.Message,
+		})
 	}
 }

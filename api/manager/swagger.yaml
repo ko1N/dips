@@ -14,7 +14,7 @@ definitions:
         type: object
       messages:
         items:
-          type: string
+          $ref: '#/definitions/messages.Message'
         type: array
     type: object
   manager.JobListResponse:
@@ -54,6 +54,13 @@ definitions:
     properties:
       status:
         type: string
+    type: object
+  messages.Message:
+    properties:
+      message:
+        type: string
+      type:
+        type: integer
     type: object
   model.Job:
     properties:

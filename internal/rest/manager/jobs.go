@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -42,8 +43,8 @@ func JobList(c *gin.Context) {
 
 // JobDetailsResponse - response with job details
 type JobDetailsResponse struct {
-	Job      *model.Job `json:"job"`
-	Messages []string   `json:"messages"`
+	Job      *model.Job         `json:"job"`
+	Messages []messages.Message `json:"messages"`
 }
 
 // JobDetails - find a single job by it's id and shows all fields
