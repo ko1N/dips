@@ -1,5 +1,11 @@
-[db]
+[mongodb]
 hosts=["localhost"]
+database="dips"
+username="dips"
+password="dips"
+
+[influxdb]
+host="http://localhost:8086"
 database="dips"
 username="dips"
 password="dips"

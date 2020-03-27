@@ -325,6 +325,12 @@
                 "job": {
                     "type": "object",
                     "$ref": "#/definitions/model.Job"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

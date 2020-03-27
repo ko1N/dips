@@ -7,8 +7,8 @@ import (
 	"github.com/zebresel-com/mongodm"
 )
 
-// Config - config entry describing a database config
-type Config struct {
+// MongoDBConfig - config entry describing a database config
+type MongoDBConfig struct {
 	LanguageFile string   `json:"language_file" toml:"language_file"`
 	Language     string   `json:"language" toml:"language"`
 	Hosts        []string `json:"hosts" toml:"hosts"`
@@ -17,8 +17,8 @@ type Config struct {
 	Password     string   `json:"password" toml:"password"`
 }
 
-// Connect - opens a connection to mongodb and returns the connection object
-func Connect(conf Config) (*mongodm.Connection, error) {
+// MongoDBConnect - opens a connection to mongodb and returns the connection object
+func MongoDBConnect(conf MongoDBConfig) (*mongodm.Connection, error) {
 	// try parsing a locals file
 	var locals map[string]string
 	if conf.LanguageFile != "" && conf.Language != "" {

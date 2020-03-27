@@ -12,6 +12,10 @@ definitions:
       job:
         $ref: '#/definitions/model.Job'
         type: object
+      messages:
+        items:
+          type: string
+        type: array
     type: object
   manager.JobListResponse:
     properties:

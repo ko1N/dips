@@ -42,7 +42,8 @@ func JobList(c *gin.Context) {
 
 // JobDetailsResponse - response with job details
 type JobDetailsResponse struct {
-	Job *model.Job `json:"job"`
+	Job      *model.Job `json:"job"`
+	Messages []string   `json:"messages"`
 }
 
 // JobDetails - find a single job by it's id and shows all fields
@@ -74,7 +75,11 @@ func JobDetails(c *gin.Context) {
 		return
 	}
 
+	// fetch job messages
+	messages := messageHandler.GetAll(id)
+
 	c.JSON(http.StatusOK, JobDetailsResponse{
-		Job: job,
+		Job:      job,
+		Messages: messages,
 	})
 }

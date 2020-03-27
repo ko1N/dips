@@ -20,8 +20,9 @@ type config struct {
 }
 
 // amqp channels
-var recvJobExecute chan string
+var recvPipelineExecute chan string
 var sendJobStatus chan string
+var sendJobMessage chan string
 
 // TODO: send status updates containing log messages
 // TODO: send status updates containing raw cmd exec log
@@ -33,7 +34,12 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 	}
 
 	// create logging instance for this pipeline
-	tracker := pipeline.CreateJobTracker(srvlog, sendJobStatus, msg.Job.Id.Hex())
+	tracker := pipeline.CreateJobTracker(pipeline.JobTrackerConfig{
+		Logger:          srvlog,
+		ProgressChannel: sendJobStatus,
+		MessageChannel:  sendJobMessage,
+		JobID:           msg.Job.Id.Hex(),
+	})
 
 	// execute pipeline on engine
 	exec := engine.CreateExecution(
@@ -82,11 +88,12 @@ func main() {
 
 	// setup amqp
 	client := amqp.Create(conf.AMQP)
-	recvJobExecute = client.RegisterConsumer("pipeline_execute")
-	sendJobStatus = client.RegisterProducer("pipeline_status")
+	recvPipelineExecute = client.RegisterConsumer("pipeline_execute")
+	sendJobStatus = client.RegisterProducer("job_status")
+	sendJobMessage = client.RegisterProducer("job_message")
 	client.Start()
 
-	for payload := range recvJobExecute {
+	for payload := range recvPipelineExecute {
 		go executePipeline(srvlog, &engine, payload)
 	}
 }

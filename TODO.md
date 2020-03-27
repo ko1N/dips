@@ -72,3 +72,6 @@ pipeline ideas:
 - spotify downloader
 - blender render
 - 
+
+misc:
+- persist amqp + update amqp code

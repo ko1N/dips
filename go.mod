@@ -23,6 +23,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
+	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect

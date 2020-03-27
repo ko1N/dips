@@ -33,8 +33,8 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func recvJobStatus() {
-	for status := range recvPipelineStatus {
+func handleJobStatus() {
+	for status := range recvJobStatus {
 		msg := pipeline.JobStatusMessage{}
 		err := json.Unmarshal([]byte(status), &msg)
 		if err != nil {
