@@ -45,7 +45,6 @@ func (e *Storage) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 
 // Execute - Executes the given storage command
 func (e *Storage) Execute(ctx *pipeline.ExecutionContext, cmd string) (environments.ExecutionResult, error) {
-	ctx.Tracker.StdIn("storage " + cmd)
 	cmdSplit := strings.Split(cmd, " ")
 	switch cmdSplit[0] {
 	case "ls":

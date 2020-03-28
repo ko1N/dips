@@ -89,6 +89,8 @@ func (e *ExecutionContext) Run() error {
 				for _, ext := range e.Engine.Extensions {
 					if ext.Command() == cmd.Name {
 						for _, rawLine := range cmd.Lines {
+							e.Tracker.StdIn(rawLine)
+
 							// TODO: put this logic in seperate objects
 							line := string(expression.ReplaceAllFunc([]byte(rawLine), func(m []byte) []byte {
 								t := strings.TrimSpace(string(m[2 : len(m)-2]))

@@ -50,7 +50,6 @@ func (e *FFMpeg) Execute(ctx *pipeline.ExecutionContext, cmd string) (environmen
 
 	// run ffmpeg and track progress
 	ctx.Tracker.Logger().Info("executing ffmpeg `" + cmd + "`")
-	ctx.Tracker.StdIn("ffmpeg " + cmd)
 	result, err := ctx.Environment.Execute(
 		append([]string{}, "/bin/sh", "-c", "ffmpeg -v warning -progress /dev/stdout "+cmd),
 		func(outmsg string) {

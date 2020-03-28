@@ -38,7 +38,6 @@ func (e *WGet) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 func (e *WGet) Execute(ctx *pipeline.ExecutionContext, cmd string) (environments.ExecutionResult, error) {
 	// run wget and track progress
 	ctx.Tracker.Logger().Info("executing wget `" + cmd + "`")
-	ctx.Tracker.StdIn("wget " + cmd)
 	result, err := ctx.Environment.Execute(
 		append([]string{}, "/bin/sh", "-c", "wget -q --show-progress "+cmd),
 		func(outmsg string) {
