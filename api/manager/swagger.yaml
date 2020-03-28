@@ -42,6 +42,10 @@ definitions:
     properties:
       name:
         type: string
+      parameters:
+        items:
+          $ref: '#/definitions/model.JobParameter'
+        type: array
     type: object
   manager.PipelineListResponse:
     properties:
@@ -70,10 +74,21 @@ definitions:
         type: string
       name:
         type: string
+      parameters:
+        items:
+          $ref: '#/definitions/model.JobParameter'
+        type: array
       pipeline:
         $ref: '#/definitions/model.Pipeline'
         type: object
       updatedAt:
+        type: string
+    type: object
+  model.JobParameter:
+    properties:
+      name:
+        type: string
+      value:
         type: string
     type: object
   model.Pipeline:
@@ -108,10 +123,19 @@ definitions:
       script:
         type: string
     type: object
+  pipeline.Parameter:
+    properties:
+      name:
+        type: string
+    type: object
   pipeline.Pipeline:
     properties:
       name:
         type: string
+      parameters:
+        items:
+          $ref: '#/definitions/pipeline.Parameter'
+        type: array
       stages:
         items:
           $ref: '#/definitions/pipeline.Stage'
@@ -126,10 +150,6 @@ definitions:
       tasks:
         items:
           $ref: '#/definitions/pipeline.Task'
-        type: array
-      variables:
-        items:
-          $ref: '#/definitions/pipeline.Variable'
         type: array
     type: object
   pipeline.Task:
@@ -153,13 +173,6 @@ definitions:
       when:
         $ref: '#/definitions/pipeline.Expression'
         type: object
-    type: object
-  pipeline.Variable:
-    properties:
-      name:
-        type: string
-      value:
-        type: string
     type: object
 info:
   contact: {}

@@ -78,6 +78,10 @@ func CreateJobTracker(conf JobTrackerConfig) JobTracker {
 	jobLog.SetHandler(log.MultiHandler(
 		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
 		log.FuncHandler(func(r *log.Record) error {
+			if conf.ProgressChannel == nil {
+				return nil
+			}
+
 			status, err := json.Marshal(JobStatusMessage{
 				JobID:  conf.JobID,
 				Type:   JobStatusLog,
@@ -115,7 +119,10 @@ func (t *JobTracker) TrackTask(taskID uint) {
 
 // TrackProgress - tracks progress of the current task
 func (t *JobTracker) TrackProgress(progress uint) {
-	//fmt.Printf("task %d progress: %d\n", t.taskID, progress)
+	if t.config.ProgressChannel == nil {
+		return
+	}
+
 	status, err := json.Marshal(JobStatusMessage{
 		JobID:  t.config.JobID,
 		Type:   JobStatusProgress,
@@ -131,7 +138,7 @@ func (t *JobTracker) TrackProgress(progress uint) {
 
 // Message - tracks messages of the current task
 func (t *JobTracker) Message(mt JobMessageType, msg string) {
-	if msg == "" {
+	if t.config.MessageChannel == nil || msg == "" {
 		// do not persist empty messages
 		return
 	}

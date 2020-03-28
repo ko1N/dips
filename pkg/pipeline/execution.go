@@ -30,7 +30,6 @@ func (e *ExecutionContext) Run() error {
 	// TODO: add CreateExecutionContext
 	// TODO: move context into seperate file
 	// TODO: decouple this function into ExecutionContext
-	e.Variables = make(map[string]tengo.Object)
 
 	// call startPipline extension hooks
 	for _, ext := range e.Engine.Extensions {
@@ -89,7 +88,7 @@ func (e *ExecutionContext) Run() error {
 				for _, ext := range e.Engine.Extensions {
 					if ext.Command() == cmd.Name {
 						for _, rawLine := range cmd.Lines {
-							e.Tracker.StdIn(rawLine)
+							e.Tracker.Status("$ " + rawLine)
 
 							// TODO: put this logic in seperate objects
 							line := string(expression.ReplaceAllFunc([]byte(rawLine), func(m []byte) []byte {
@@ -100,6 +99,8 @@ func (e *ExecutionContext) Run() error {
 								}
 								return []byte(v)
 							}))
+
+							e.Tracker.StdIn(line)
 
 							result, err := ext.Execute(e, line)
 							if err != nil {
@@ -129,10 +130,6 @@ func (e *ExecutionContext) Run() error {
 
 	return nil
 }
-
-//
-// TODO: remove Logger() dependency from environment but rather use the tracker!
-//
 
 func (e *ExecutionContext) createEnvironment(env string, tracker tracking.JobTracker) (environments.Environment, error) {
 	split := strings.Split(env, "/")

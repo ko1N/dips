@@ -12,6 +12,7 @@ import (
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 
 	"github.com/BurntSushi/toml"
+	"github.com/d5/tengo/v2"
 	log "github.com/inconshreveable/log15"
 )
 
@@ -47,6 +48,13 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 		msg.Job.Id.Hex(),
 		msg.Job.Pipeline.Pipeline,
 		tracker)
+
+	// setup parameters
+	for _, param := range msg.Job.Parameters {
+		exec.Variables[param.Name] = &tengo.String{Value: param.Value}
+	}
+
+	// run execution
 	err := exec.Run()
 	if err != nil {
 		tracker.Logger().Crit("unable to execute pipeline", "error", err)

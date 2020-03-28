@@ -10,7 +10,8 @@ import (
 
 // PipelineExecuteRequest - Request Body when executing a pipeline
 type PipelineExecuteRequest struct {
-	Name string `json:"name"`
+	Name       string               `json:"name"`
+	Parameters []model.JobParameter `json:"parameters"`
 }
 
 // ExecutePipelineMessage - message sent from manager to worker when a pipeline is started
@@ -72,8 +73,9 @@ func PipelineExecute(c *gin.Context) {
 
 	// create the job
 	job := model.Job{
-		Name:     request.Name,
-		Pipeline: pipe,
+		Name:       request.Name,
+		Parameters: request.Parameters,
+		Pipeline:   pipe,
 	}
 
 	err = jobs.CreateJob(&job)
