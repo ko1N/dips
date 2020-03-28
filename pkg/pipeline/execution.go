@@ -3,6 +3,7 @@ package pipeline
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -62,11 +63,14 @@ func (e *ExecutionContext) Run() error {
 			e.Environment = nil
 		}()
 
+		expression := regexp.MustCompile(`{{.*?}}`)
+
 		// execute tasks in pipeline
 		for _, task := range stage.Tasks {
 			e.Tracker.Status("--- Executing Task: " + task.Name)
 			e.Tracker.TrackTask(taskID)
 
+			// TODO: put this logic in seperate objects
 			// check "when" condition
 			if task.When.Script != "" {
 				res, err := task.When.Evaluate(e.Variables)
@@ -74,7 +78,7 @@ func (e *ExecutionContext) Run() error {
 					e.Tracker.Error("unable to compile expression", err)
 					return err
 				}
-				if res == false {
+				if res != "true" {
 					e.Tracker.Status("`when` condition not met, skipping task")
 					continue
 				}
@@ -84,7 +88,17 @@ func (e *ExecutionContext) Run() error {
 			for _, cmd := range task.Command {
 				for _, ext := range e.Engine.Extensions {
 					if ext.Command() == cmd.Name {
-						for _, line := range cmd.Lines {
+						for _, rawLine := range cmd.Lines {
+							// TODO: put this logic in seperate objects
+							line := string(expression.ReplaceAllFunc([]byte(rawLine), func(m []byte) []byte {
+								t := strings.TrimSpace(string(m[2 : len(m)-2]))
+								v, err := (&Expression{Script: string(t)}).Evaluate(e.Variables)
+								if err != nil {
+									// TODO:
+								}
+								return []byte(v)
+							}))
+
 							result, err := ext.Execute(e, line)
 							if err != nil {
 								e.Tracker.Error("task execution failed", err)
