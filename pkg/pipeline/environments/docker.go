@@ -45,13 +45,13 @@ func CreateDockerEnvironment(tracker tracking.JobTracker, image string) (DockerE
 		fmt.Sprintf("docker.io/library/%s", image),
 		types.ImagePullOptions{})
 	if err != nil {
-		tracker.Error("unable to pull docker image `"+image+"`", err)
-		return DockerEnvironment{}, err
+		tracker.Error("unable to pull docker image `"+image+"`. trying to use latest local image.", err)
+		//return DockerEnvironment{}, err // TODO: handle docker login
 	}
 	//io.Copy(os.Stdout, reader)
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "alpine",
+		Image: image,
 		Cmd:   []string{"/bin/sh"},
 		Tty:   true,
 	}, nil, nil, "")

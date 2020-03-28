@@ -53,7 +53,7 @@ func (e *ExecutionContext) Run() error {
 		e.Tracker.Status("--- Creating environment: " + stage.Environment)
 		env, err := e.createEnvironment(stage.Environment, e.Tracker)
 		if err != nil {
-			e.Tracker.Error("unable to create environment `"+stage.Environment+"`", nil)
+			e.Tracker.Error("unable to create environment `"+stage.Environment+"`", err)
 			return err
 		}
 		e.Environment = env
