@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 )
 
 /*
@@ -33,9 +33,9 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func recvJobStatus() {
-	for status := range recvPipelineStatus {
-		msg := pipeline.JobStatusMessage{}
+func handleJobStatus() {
+	for status := range recvJobStatus {
+		msg := tracking.JobStatusMessage{}
 		err := json.Unmarshal([]byte(status), &msg)
 		if err != nil {
 			fmt.Printf("unable to unmarshal status message")

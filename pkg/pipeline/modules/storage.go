@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
 
 	"github.com/google/uuid"
 )
@@ -33,41 +33,41 @@ func (e *Storage) Command() string {
 
 // StartPipeline -
 func (e *Storage) StartPipeline(ctx *pipeline.ExecutionContext) error {
-	ctx.Tracker.Logger().Info("creating storage bucket `" + ctx.JobID + "`")
+	ctx.Tracker.Status("creating storage bucket `" + ctx.JobID + "`")
 	return e.Storage.CreateBucket(ctx.JobID)
 }
 
 // FinishPipeline -
 func (e *Storage) FinishPipeline(ctx *pipeline.ExecutionContext) error {
-	ctx.Tracker.Logger().Info("deleting storage bucket `" + ctx.JobID + "`")
+	ctx.Tracker.Status("deleting storage bucket `" + ctx.JobID + "`")
 	return e.Storage.DeleteBucket(ctx.JobID)
 }
 
 // Execute - Executes the given storage command
-func (e *Storage) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *Storage) Execute(ctx *pipeline.ExecutionContext, cmd string) (environments.ExecutionResult, error) {
 	cmdSplit := strings.Split(cmd, " ")
 	switch cmdSplit[0] {
 	case "ls":
 		if err := e.listFiles(ctx, cmdSplit[1:]); err != nil {
-			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+			ctx.Tracker.Error("invalid storage command: `"+cmd+"`", err)
 		}
 		break
 	case "get":
 		if err := e.getFile(ctx, cmdSplit[1:]); err != nil {
-			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+			ctx.Tracker.Error("invalid storage command: `"+cmd+"`", err)
 		}
 		break
 	case "put":
 		if err := e.putFile(ctx, cmdSplit[1:]); err != nil {
-			ctx.Tracker.Logger().Crit("invalid storage command: `"+cmd+"`", "error", err)
+			ctx.Tracker.Error("invalid storage command: `"+cmd+"`", err)
 		}
 		break
 	default:
-		ctx.Tracker.Logger().Crit("invalid storage command: `" + cmd + "`. usage: ls/get/put")
+		ctx.Tracker.Error("invalid storage command: `"+cmd+"`. usage: ls/get/put", nil)
 		break
 	}
 
-	return environment.ExecutionResult{}, nil
+	return environments.ExecutionResult{}, nil
 }
 
 // TODO: get this back into the execution context / variables?
@@ -100,7 +100,7 @@ func (e *Storage) getFile(ctx *pipeline.ExecutionContext, args []string) error {
 	tempFile := "/tmp/" + ctx.JobID + "/" + tempFileName
 	err := e.Storage.GetFile(ctx.JobID, filepath.Base(args[0]), tempFile)
 	if err != nil {
-		ctx.Tracker.Logger().Crit("unable to copy file `"+tempFile+"` from storage", "error", err)
+		ctx.Tracker.Error("unable to copy file `"+tempFile+"` from storage", err)
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (e *Storage) getFile(ctx *pipeline.ExecutionContext, args []string) error {
 	// copy file to env
 	err = ctx.Environment.CopyTo(tempFile, args[0]) // TODO: get pwd?
 	if err != nil {
-		ctx.Tracker.Logger().Crit("unable to copy file from temporary folder to environment `"+args[0]+"`", "error", err)
+		ctx.Tracker.Error("unable to copy file from temporary folder to environment `"+args[0]+"`", err)
 		return err
 	}
 
@@ -127,7 +127,7 @@ func (e *Storage) putFile(ctx *pipeline.ExecutionContext, args []string) error {
 	tempFolder := "/tmp/" + ctx.JobID
 	err := os.MkdirAll(tempFolder, os.ModePerm)
 	if err != nil {
-		ctx.Tracker.Logger().Crit("unable to create temporary folder `"+tempFolder+"`", "error", err)
+		ctx.Tracker.Error("unable to create temporary folder `"+tempFolder+"`", err)
 		return err
 	}
 
@@ -135,13 +135,13 @@ func (e *Storage) putFile(ctx *pipeline.ExecutionContext, args []string) error {
 	tempFile := tempFolder + "/" + tempFileName
 	err = ctx.Environment.CopyFrom(args[0], tempFile)
 	if err != nil {
-		ctx.Tracker.Logger().Crit("unable to copy file from environment to temporary folder `"+tempFolder+"`", "error", err)
+		ctx.Tracker.Error("unable to copy file from environment to temporary folder `"+tempFolder+"`", err)
 		return err
 	}
 
 	err = e.Storage.PutFile(ctx.JobID, tempFile, filepath.Base(args[0]))
 	if err != nil {
-		ctx.Tracker.Logger().Crit("unable to copy temporary file `"+args[0]+"` to storage", "error", err)
+		ctx.Tracker.Error("unable to copy temporary file `"+args[0]+"` to storage", err)
 		return err
 	}
 

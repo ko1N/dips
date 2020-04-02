@@ -13,6 +13,11 @@ type Variable struct {
 	Value string `json:"value" bson:"value"`
 }
 
+// Parameter -
+type Parameter struct {
+	Name string `json:"name" bson:"name"`
+}
+
 // Command -
 type Command struct {
 	Name  string   `json:"name" bson:"name"`
@@ -31,16 +36,17 @@ type Task struct {
 
 // Stage -
 type Stage struct {
-	Name        string     `json:"name" bson:"name"`
-	Environment string     `json:"environment" bson:"environment"`
-	Tasks       []Task     `json:"tasks" bson:"tasks"`
-	Variables   []Variable `json:"variables" bson:"variables"`
+	Name        string `json:"name" bson:"name"`
+	Environment string `json:"environment" bson:"environment"`
+	Tasks       []Task `json:"tasks" bson:"tasks"`
+	//Variables   []Variable `json:"variables" bson:"variables"`
 }
 
 // Pipeline -
 type Pipeline struct {
-	Name   string  `json:"name" bson:"name"`
-	Stages []Stage `json:"stages" bson:"stages"`
+	Name       string      `json:"name" bson:"name"`
+	Parameters []Parameter `json:"parameters" bson:"parameters"`
+	Stages     []Stage     `json:"stages" bson:"stages"`
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
@@ -70,6 +76,12 @@ func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
 		result.Name = name.(string)
 	}
 
+	var err error
+	result.Parameters, err = parseParameters(script)
+	if err != nil {
+		return result, err
+	}
+
 	if stages, ok := script["stages"]; ok {
 		for _, s := range stages.([]interface{}) {
 			stage, err := parseStage(s.(map[interface{}]interface{}))
@@ -80,6 +92,18 @@ func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
 		}
 	}
 
+	return result, nil
+}
+
+func parseParameters(script map[interface{}]interface{}) ([]Parameter, error) {
+	var result []Parameter
+	if params, ok := script["parameters"]; ok {
+		for _, value := range params.([]interface{}) {
+			result = append(result, Parameter{
+				Name: value.(string),
+			})
+		}
+	}
 	return result, nil
 }
 
@@ -96,11 +120,6 @@ func parseStage(script map[interface{}]interface{}) (Stage, error) {
 		}
 
 		var err error
-		result.Variables, err = parseVariables(script)
-		if err != nil {
-			return result, err
-		}
-
 		result.Tasks, err = parseTasks(script)
 		if err != nil {
 			return result, err
@@ -110,20 +129,6 @@ func parseStage(script map[interface{}]interface{}) (Stage, error) {
 	}
 
 	return Stage{}, errors.New("Malformed stage. Should start with \"- stage: [Name]\"")
-}
-
-func parseVariables(script map[interface{}]interface{}) ([]Variable, error) {
-	var result []Variable
-	if vars, ok := script["vars"]; ok {
-		//fmt.Printf("vars:\n%v\n\n", vars)
-		for key, value := range vars.(map[interface{}]interface{}) {
-			result = append(result, Variable{
-				Name:  key.(string),
-				Value: value.(string),
-			})
-		}
-	}
-	return result, nil
 }
 
 func parseTasks(script map[interface{}]interface{}) ([]Task, error) {

@@ -12,7 +12,7 @@ type Expression struct {
 }
 
 // Evaluate - Evaluates the expression to a bool
-func (e *Expression) Evaluate(variables map[string]tengo.Object) (bool, error) {
+func (e *Expression) Evaluate(variables map[string]tengo.Object) (string, error) {
 	// TODO: handle errors
 	src := `out := ` + e.Script
 	script := tengo.NewScript([]byte(src))
@@ -25,10 +25,10 @@ func (e *Expression) Evaluate(variables map[string]tengo.Object) (bool, error) {
 	// compile script
 	compiled, err := script.RunContext(context.Background())
 	if err != nil {
-		return false, err
+		return "", err
 	}
 
 	// evaluate output
 	out := compiled.Get("out")
-	return out.Bool(), nil
+	return out.String(), nil
 }

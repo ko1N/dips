@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/environment"
 	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
 )
 
 // pipeline module for wget
@@ -35,16 +35,16 @@ func (e *WGet) FinishPipeline(ctx *pipeline.ExecutionContext) error {
 }
 
 // Execute -
-func (e *WGet) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.ExecutionResult, error) {
+func (e *WGet) Execute(ctx *pipeline.ExecutionContext, cmd string) (environments.ExecutionResult, error) {
 	// run wget and track progress
 	ctx.Tracker.Logger().Info("executing wget `" + cmd + "`")
 	result, err := ctx.Environment.Execute(
 		append([]string{}, "/bin/sh", "-c", "wget -q --show-progress "+cmd),
 		func(outmsg string) {
-			ctx.Tracker.TrackStdOut(outmsg)
+			ctx.Tracker.StdOut(outmsg)
 		},
 		func(errmsg string) {
-			ctx.Tracker.TrackStdErr(errmsg)
+			ctx.Tracker.StdErr(errmsg)
 			if strings.Contains(errmsg, "%") {
 				split := strings.Split(errmsg, " ")
 				for _, part := range split {
@@ -59,15 +59,15 @@ func (e *WGet) Execute(ctx *pipeline.ExecutionContext, cmd string) (environment.
 		})
 	if err != nil {
 		ctx.Tracker.Logger().Crit("execution of wget failed")
-		return environment.ExecutionResult{}, err
+		return environments.ExecutionResult{}, err
 	}
 
 	if result.ExitCode == 0 {
 		ctx.Tracker.Logger().Info("wget finished")
 	} else {
 		// TODO: handle error
-		return environment.ExecutionResult{}, errors.New("wget failed")
+		return environments.ExecutionResult{}, errors.New("wget failed")
 	}
 
-	return environment.ExecutionResult{}, nil
+	return environments.ExecutionResult{}, nil
 }

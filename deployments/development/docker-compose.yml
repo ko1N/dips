@@ -22,6 +22,18 @@ services:
     networks:
       - mongodb
 
+  influxdb:
+    image: influxdb:1.7
+    environment:
+      INFLUXDB_REPORTING_DISABLED: "true"
+      INFLUXDB_DB: "dips"
+      INFLUXDB_USER: "dips"
+      INFLUXDB_USER_PASSWORD: "dips"
+    volumes:
+      - influx-data:/var/lib/influxdb
+    networks:
+      - influx
+
   minio:
     image: minio/minio:latest
     environment:
@@ -36,7 +48,9 @@ services:
 networks:
   rabbitmq: {}
   mongodb: {}
+  influx: {}
   minio: {}
 
 volumes:
+  influx-data:
   minio-data:

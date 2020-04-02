@@ -15,6 +15,7 @@ import (
 	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
 )
 
@@ -32,8 +33,9 @@ import (
 //go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/database/crud/job.go
 
 type config struct {
-	Database database.Config `json:"db" toml:"db"`
-	AMQP     amqp.Config     `json:"amqp" toml:"amqp"`
+	MongoDB  database.MongoDBConfig  `json:"mongodb" toml:"mongodb"`
+	InfluxDB database.InfluxDBConfig `json:"influxdb" toml:"influxdb"`
+	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
 }
 
 func main() {
@@ -51,11 +53,28 @@ func main() {
 	}
 
 	// setup database
-	db, err := database.Connect(conf.Database)
+	mongodb, err := database.MongoDBConnect(conf.MongoDB)
 	if err != nil {
-		srvlog.Crit("Database connection could not be established", "error", err)
+		srvlog.Crit("Could not connect to mongodb instances", "error", err)
 		return
 	}
+
+	// setup messages
+	// setup logging
+	influxdb, err := database.InfluxDBConnect(conf.InfluxDB)
+	if err != nil {
+		srvlog.Crit("Could not connect to influxdb instance", "error", err)
+		return
+	}
+
+	messageHandler := messages.CreateMessageHandler(influxdb, conf.InfluxDB.Database)
+	/*
+		msg.Message("test", "Hello World 1!")
+		msg.Message("test", "Hello World 2!")
+		msg.Message("test", "Hello World 3!")
+
+		msg.GetAll("test")
+	*/
 
 	// setup web service
 	r := gin.Default()
@@ -66,7 +85,16 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	manager.CreateManagerAPI(r, db, conf.AMQP)
+	err = manager.CreateManagerAPI(manager.ManagerAPIConfig{
+		Gin:            r,
+		AMQP:           conf.AMQP,
+		MongoDB:        mongodb,
+		MessageHandler: messageHandler, // TODO: let managerAPI create its own db connections
+	})
+	if err != nil {
+		srvlog.Crit("Unable to create Manager API", "error", err)
+		return
+	}
 
 	// add swagger documentation on local dev builds
 	mode := os.Getenv("GIN_MODE")

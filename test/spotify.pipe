@@ -1,0 +1,28 @@
+---
+name: spotify downloader
+
+parameters:
+- spotify_user
+- spotify_password
+- spotify_song_uris
+
+stages:
+
+- stage: spotify download
+  environment: docker/librespot_mod:latest
+  tasks:
+
+  - name: setup login.toml
+    shell: echo "[login]\nusername=\"{{ spotify_user }}\"\npassword=\"{{ spotify_password }}\"" > /app/login.toml
+
+  - name: setup uris.txt
+    shell: echo "{{ spotify_song_uris }}" > /app/uris.txt
+
+  - name: run downloader
+    shell: PWD=/app ./loader uris.txt
+
+  - name: zip tracks
+    shell: PWD=/app zip tracks.zip dump/*
+
+  - name: upload tracks
+    storage: put tracks.zip

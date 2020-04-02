@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
+	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -26,7 +27,7 @@ func JobList(c *gin.Context) {
 	// TODO: pagination
 	jobList := []*model.Job{}
 	err := jobs.FindJobsQuery(bson.M{"deleted": false}).
-		Select(bson.M{"name": true, "progress": true}).
+		Select(bson.M{"name": true}).
 		Exec(&jobList)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
@@ -42,7 +43,8 @@ func JobList(c *gin.Context) {
 
 // JobDetailsResponse - response with job details
 type JobDetailsResponse struct {
-	Job *model.Job `json:"job"`
+	Job      *model.Job         `json:"job"`
+	Messages []messages.Message `json:"messages"`
 }
 
 // JobDetails - find a single job by it's id and shows all fields
@@ -74,7 +76,11 @@ func JobDetails(c *gin.Context) {
 		return
 	}
 
+	// fetch job messages
+	messages := messageHandler.GetAll(id)
+
 	c.JSON(http.StatusOK, JobDetailsResponse{
-		Job: job,
+		Job:      job,
+		Messages: messages,
 	})
 }

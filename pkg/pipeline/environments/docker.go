@@ -1,4 +1,4 @@
-package environment
+package environments
 
 import (
 	"bufio"
@@ -11,14 +11,13 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/inconshreveable/log15"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/system"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
 )
 
 // implements a dockerized environment
@@ -31,11 +30,13 @@ type DockerEnvironment struct {
 }
 
 // CreateDockerEnvironment -
-func CreateDockerEnvironment(pipelog log.Logger, image string) (DockerEnvironment, error) {
+func CreateDockerEnvironment(tracker tracking.JobTracker, image string) (DockerEnvironment, error) {
+	tracker.Status("creating docker environment for image `" + image + "`")
+
 	ctx := context.Background()
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		pipelog.Crit("unable to create docker environment", err)
+		tracker.Error("unable to create docker environment", err)
 		return DockerEnvironment{}, err
 	}
 
@@ -44,26 +45,27 @@ func CreateDockerEnvironment(pipelog log.Logger, image string) (DockerEnvironmen
 		fmt.Sprintf("docker.io/library/%s", image),
 		types.ImagePullOptions{})
 	if err != nil {
-		pipelog.Crit("unable to pull docker image `"+image+"`", err)
-		return DockerEnvironment{}, err
+		tracker.Error("unable to pull docker image `"+image+"`. trying to use latest local image.", err)
+		//return DockerEnvironment{}, err // TODO: handle docker login
 	}
 	//io.Copy(os.Stdout, reader)
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "alpine",
+		Image: image,
 		Cmd:   []string{"/bin/sh"},
 		Tty:   true,
 	}, nil, nil, "")
 	if err != nil {
-		pipelog.Crit("unable to create container with image `"+image+"`", err)
+		tracker.Error("unable to create container with image `"+image+"`", err)
 		return DockerEnvironment{}, err
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		pipelog.Crit("unable to start container with image `"+image+"`", err)
+		tracker.Error("unable to start container with image `"+image+"`", err)
 		return DockerEnvironment{}, err
 	}
 
+	tracker.Status("created docker environment for image `" + image + "` with id `" + resp.ID + "`")
 	return DockerEnvironment{
 		ctx: ctx,
 		cli: cli,

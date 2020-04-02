@@ -1,5 +1,10 @@
 package pipeline
 
+import (
+	"github.com/d5/tengo/v2"
+	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+)
+
 // Engine - engine instance
 type Engine struct {
 	Extensions []Extension
@@ -22,11 +27,12 @@ func (e *Engine) RegisterExtension(ext Extension) *Engine {
 }
 
 // CreateExecution - creates a new execution context
-func (e *Engine) CreateExecution(jobID string, pipeline *Pipeline, tracker JobTracker) ExecutionContext {
+func (e *Engine) CreateExecution(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) ExecutionContext {
 	return ExecutionContext{
-		Engine:   e,
-		JobID:    jobID,
-		Pipeline: pipeline,
-		Tracker:  tracker,
+		Engine:    e,
+		JobID:     jobID,
+		Pipeline:  pipeline,
+		Tracker:   tracker,
+		Variables: make(map[string]tengo.Object),
 	}
 }

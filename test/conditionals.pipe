@@ -1,5 +1,10 @@
 ---
 name: conditionals
+
+parameters:
+  - binary_first
+  - binary_second
+
 stages:
 - stage: testing conditional execution
   environment: docker/alpine:latest
@@ -8,7 +13,12 @@ stages:
   - name: try execute /usr/bin/foo
     shell: /usr/bin/foo
     register: foo_result
-    ignore_errors: "false"
+    ignore_errors: "true"
+
+  - shell: "echo {{ foo_result.rc }}"
 
   - shell: /usr/bin/bar
     when: foo_result.rc == 5
+
+  - shell: /usr/bin/bar
+    when: foo_result.rc != 0
