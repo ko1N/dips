@@ -41,6 +41,12 @@ func CreateManagerAPI(r *gin.Engine, db *mongodm.Connection, mq amqp.Config) err
 	go recvJobStatus()
 	client.Start()
 
+	/*
+		client.RegisterConsumerFunc("pipeline_status", func(msg []byte) {
+			// handle message
+		})
+	*/
+
 	// setup rest routes
 	r.POST("/manager/pipeline/", PipelineCreate)
 	r.GET("/manager/pipeline/all", PipelineList)

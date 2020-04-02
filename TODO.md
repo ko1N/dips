@@ -9,6 +9,7 @@ worker:
 - buffer tracking messages before sending them to fast
 - log file with log rotation
 - keep local database (e.g. store docker containers in db so we can clean them up in case of a crash!)
+- docker login support -> https://github.com/docker/cli/blob/49bd6b729dbbbb7572ffd2ecac45ccd67680e5e8/cli/command/registry/login.go
 
 manager:
 - api to paginate/list/start/stop pipelines
