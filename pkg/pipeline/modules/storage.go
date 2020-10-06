@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
+	"github.com/ko1N/dips/internal/persistence/storage"
+	"github.com/ko1N/dips/pkg/pipeline"
+	"github.com/ko1N/dips/pkg/pipeline/environments"
 
 	"github.com/google/uuid"
 )

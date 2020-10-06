@@ -9,8 +9,8 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
+	"github.com/ko1N/dips/pkg/pipeline"
+	"github.com/ko1N/dips/pkg/pipeline/environments"
 )
 
 // pipeline module for ffmpeg

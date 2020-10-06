@@ -17,7 +17,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/system"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 // implements a dockerized environment

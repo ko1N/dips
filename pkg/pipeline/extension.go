@@ -1,6 +1,6 @@
 package pipeline
 
-import "gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
+import "github.com/ko1N/dips/pkg/pipeline/environments"
 
 // Extension -
 type Extension interface {

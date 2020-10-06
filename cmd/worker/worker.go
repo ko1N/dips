@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/storage"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/internal/amqp"
+	"github.com/ko1N/dips/internal/persistence/storage"
+	"github.com/ko1N/dips/internal/rest/manager"
+	"github.com/ko1N/dips/pkg/pipeline"
+	"github.com/ko1N/dips/pkg/pipeline/modules"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 
 	"github.com/BurntSushi/toml"
 	"github.com/d5/tengo/v2"

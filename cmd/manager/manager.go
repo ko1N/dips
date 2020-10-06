@@ -12,11 +12,11 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	// swagger generated docs
-	_ "gitlab.strictlypaste.xyz/ko1n/dips/api/manager"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/rest/manager"
+	_ "github.com/ko1N/dips/api/manager"
+	"github.com/ko1N/dips/internal/amqp"
+	"github.com/ko1N/dips/internal/persistence/database"
+	"github.com/ko1N/dips/internal/persistence/messages"
+	"github.com/ko1N/dips/internal/rest/manager"
 )
 
 // @title dips

@@ -1,4 +1,4 @@
-module gitlab.strictlypaste.xyz/ko1n/dips
+module github.com/ko1N/dips
 
 go 1.13
 

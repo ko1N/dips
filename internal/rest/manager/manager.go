@@ -2,10 +2,10 @@ package manager
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/ko1N/dips/internal/amqp"
+	"github.com/ko1N/dips/internal/persistence/database/crud"
+	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/zebresel-com/mongodm"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/amqp"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/crud"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
 )
 
 // TODO: this should be self-contained and not have a global state!

@@ -8,7 +8,7 @@ import (
 	"path"
 
 	"github.com/google/uuid"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 // implements a native environment ("bare metal")

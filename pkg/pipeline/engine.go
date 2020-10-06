@@ -2,7 +2,7 @@ package pipeline
 
 import (
 	"github.com/d5/tengo/v2"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 // Engine - engine instance

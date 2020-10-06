@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/messages"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/internal/persistence/messages"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 func handleJobMessage() {

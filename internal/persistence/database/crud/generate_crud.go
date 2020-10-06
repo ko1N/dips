@@ -47,7 +47,7 @@ package crud
 
 import (
 	"github.com/zebresel-com/mongodm"
-	"gitlab.strictlypaste.xyz/ko1n/dips/internal/persistence/database/model"
+	"github.com/ko1N/dips/internal/persistence/database/model"
 	"gopkg.in/mgo.v2/bson"
 )
 

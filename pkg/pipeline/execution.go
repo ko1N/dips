@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/d5/tengo/v2"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/environments"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/pipeline/environments"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 // ExecutionContext - context for a execution

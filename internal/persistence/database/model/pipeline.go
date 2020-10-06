@@ -1,8 +1,8 @@
 package model
 
 import (
+	"github.com/ko1N/dips/pkg/pipeline"
 	"github.com/zebresel-com/mongodm"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
 )
 
 // TODO: properties struct

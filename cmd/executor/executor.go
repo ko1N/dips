@@ -6,9 +6,9 @@ import (
 
 	log "github.com/inconshreveable/log15"
 
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/modules"
-	"gitlab.strictlypaste.xyz/ko1n/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/pipeline"
+	"github.com/ko1N/dips/pkg/pipeline/modules"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 func main() {
