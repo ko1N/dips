@@ -426,9 +426,47 @@ var doc = `{
                 }
             }
         },
+        "mgo.Collection": {
+            "type": "object",
+            "properties": {
+                "database": {
+                    "type": "object",
+                    "$ref": "#/definitions/mgo.Database"
+                },
+                "fullName": {
+                    "description": "\"db.collection\"",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "\"collection\"",
+                    "type": "string"
+                }
+            }
+        },
+        "mgo.Database": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "session": {
+                    "type": "object",
+                    "$ref": "#/definitions/mgo.Session"
+                }
+            }
+        },
+        "mgo.Session": {
+            "type": "object"
+        },
         "model.Job": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -441,6 +479,9 @@ var doc = `{
                 "pipeline": {
                     "type": "object",
                     "$ref": "#/definitions/model.Pipeline"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },
@@ -458,6 +499,12 @@ var doc = `{
         "model.Pipeline": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -469,6 +516,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "script": {
+                    "type": "string"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
