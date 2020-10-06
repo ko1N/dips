@@ -413,12 +413,6 @@
         "model.Job": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -431,9 +425,6 @@
                 "pipeline": {
                     "type": "object",
                     "$ref": "#/definitions/model.Pipeline"
-                },
-                "updatedAt": {
-                    "type": "string"
                 }
             }
         },
@@ -451,12 +442,6 @@
         "model.Pipeline": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -468,9 +453,6 @@
                     "type": "integer"
                 },
                 "script": {
-                    "type": "string"
-                },
-                "updatedAt": {
                     "type": "string"
                 }
             }
