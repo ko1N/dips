@@ -1,5 +1,5 @@
 <p align="center">
-<img src="docs/logo.png" alt="mouseplay" title="mouseplay" />
+<img src="dips.logo.png" alt="mouseplay" title="mouseplay" />
 </p>
 
 # dips - distributed pipeline system
