@@ -22,8 +22,8 @@ type Config struct {
 }
 
 // Create - will create a new AMQP Client object
-func Create(conf Config) Client {
-	return Client{
+func Create(conf Config) *Client {
+	return &Client{
 		server:    conf.Host,
 		producers: make(map[string]chan string),
 		consumers: make(map[string]chan string),
@@ -44,8 +44,8 @@ func (c *Client) RegisterConsumer(name string) chan string {
 	return chn
 }
 
-// Start - spawns a client in a new goroutine
-func (c *Client) Start() {
+// Run - spawns a client in a new goroutine
+func (c *Client) Run() {
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
@@ -109,6 +109,7 @@ func handleProducer(ch *amqp.Channel, q amqp.Queue, goch chan string) {
 
 func (c *Client) declareProducers(ch *amqp.Channel) error {
 	for key := range c.producers {
+		fmt.Printf("[AMQP] Creating queue %s\n", key)
 		queue, err := ch.QueueDeclare(
 			key,
 			true,
@@ -132,6 +133,7 @@ func handleConsumer(queue <-chan amqp.Delivery, goch chan string) {
 
 func (c *Client) declareConsumers(ch *amqp.Channel) error {
 	for key := range c.consumers {
+		fmt.Printf("[AMQP] Creating queue %s\n", key)
 		_, err := ch.QueueDeclare(
 			key,
 			true,

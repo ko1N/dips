@@ -9,7 +9,6 @@ parameters:
 stages:
 
 - stage: spotify download
-  environment: docker/librespot_mod:latest
   tasks:
 
   - name: setup login.toml

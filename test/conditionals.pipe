@@ -7,7 +7,6 @@ parameters:
 
 stages:
 - stage: testing conditional execution
-  environment: docker/alpine:latest
   tasks:
 
   - name: try execute /usr/bin/foo

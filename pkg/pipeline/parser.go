@@ -18,27 +18,21 @@ type Parameter struct {
 	Name string `json:"name" bson:"name"`
 }
 
-// Command -
-type Command struct {
-	Name  string   `json:"name" bson:"name"`
-	Lines []string `json:"lines" bson:"lines"`
-}
-
 // Task -
 type Task struct {
-	Name         string     `json:"name" bson:"name"`
-	Command      []Command  `json:"command" bson:"command"`
-	IgnoreErrors bool       `json:"ignore_errors" bson:"ignore_errors"`
-	Register     string     `json:"register" bson:"register"` // VariableRef
-	Notify       []string   `json:"notify" bson:"notify"`     // NotifyRef
-	When         Expression `json:"when" bson:"when"`
+	Name         string            `json:"name" bson:"name"`
+	Service      string            `json:"service" bson:"service"`
+	Input        map[string]string `json:"input" bson:"input"`
+	IgnoreErrors bool              `json:"ignore_errors" bson:"ignore_errors"`
+	Register     string            `json:"register" bson:"register"`
+	Notify       []string          `json:"notify" bson:"notify"` // NotifyRef
+	When         Expression        `json:"when" bson:"when"`
 }
 
 // Stage -
 type Stage struct {
-	Name        string `json:"name" bson:"name"`
-	Environment string `json:"environment" bson:"environment"`
-	Tasks       []Task `json:"tasks" bson:"tasks"`
+	Name  string `json:"name" bson:"name"`
+	Tasks []Task `json:"tasks" bson:"tasks"`
 	//Variables   []Variable `json:"variables" bson:"variables"`
 }
 
@@ -111,12 +105,7 @@ func parseStage(script map[interface{}]interface{}) (Stage, error) {
 	if stage, ok := script["stage"]; ok {
 		//fmt.Println("Parsing stage" + stage.(string))
 		result := Stage{
-			Name:        stage.(string),
-			Environment: "native",
-		}
-
-		if env, ok := script["environment"]; ok {
-			result.Environment = env.(string)
+			Name: stage.(string),
 		}
 
 		var err error
@@ -156,6 +145,19 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 			result.Name = value.(string)
 			break
 
+		case "service":
+			result.Service = value.(string)
+			break
+
+		case "input":
+			result.Input = make(map[string]string)
+			if val, ok := value.(map[interface{}]interface{}); ok {
+				for key, val := range val {
+					result.Input[key.(string)] = val.(string)
+				}
+			}
+			break
+
 		case "ignore_errors":
 			result.IgnoreErrors = strings.ToLower(value.(string)) == "true"
 			break
@@ -187,38 +189,9 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 			break
 
 		default:
-			cmd, err := parseCommand(key.(string), value)
-			if err != nil {
-				return result, err
-			}
-			result.Command = append(result.Command, cmd)
 			break
 		}
 	}
 
 	return result, nil
-}
-
-func parseCommand(cmd string, args interface{}) (Command, error) {
-	if val, ok := args.(string); ok {
-		return Command{
-			Name:  cmd,
-			Lines: []string{val},
-		}, nil
-	} else if list, ok := args.([]interface{}); ok {
-		var lines []string
-		for _, val := range list {
-			if str, ok := val.(string); ok {
-				lines = append(lines, str)
-			} else {
-				return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\". Should be a string or a list of strings")
-			}
-		}
-		return Command{
-			Name:  cmd,
-			Lines: lines,
-		}, nil
-	} else {
-		return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\"")
-	}
 }

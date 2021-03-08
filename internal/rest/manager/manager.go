@@ -55,7 +55,7 @@ func CreateManagerAPI(conf ManagerAPIConfig) error {
 	recvJobMessage = client.RegisterConsumer("job_message")
 	go handleJobStatus()
 	go handleJobMessage()
-	client.Start()
+	client.Run()
 
 	/*
 		client.RegisterConsumerFunc("pipeline_status", func(msg []byte) {

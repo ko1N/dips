@@ -5,10 +5,8 @@ import (
 	"flag"
 
 	"github.com/ko1N/dips/internal/amqp"
-	"github.com/ko1N/dips/internal/persistence/storage"
 	"github.com/ko1N/dips/internal/rest/manager"
 	"github.com/ko1N/dips/pkg/pipeline"
-	"github.com/ko1N/dips/pkg/pipeline/modules"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
 
 	"github.com/BurntSushi/toml"
@@ -17,8 +15,7 @@ import (
 )
 
 type config struct {
-	AMQP  amqp.Config          `json:"amqp" toml:"amqp"`
-	MinIO *storage.MinIOConfig `json:"minio" toml:"minio"`
+	AMQP amqp.Config `json:"amqp" toml:"amqp"`
 }
 
 // amqp channels
@@ -28,7 +25,7 @@ var sendJobMessage chan string
 
 // TODO: send status updates containing log messages
 // TODO: send status updates containing raw cmd exec log
-func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string) {
+func executePipeline(srvlog log.Logger, payload string) {
 	msg := manager.ExecutePipelineMessage{}
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
 		srvlog.Crit("unable to unmarshal payload", "error", err)
@@ -44,7 +41,7 @@ func executePipeline(srvlog log.Logger, engine *pipeline.Engine, payload string)
 	})
 
 	// execute pipeline on engine
-	exec := engine.CreateExecution(
+	exec := pipeline.NewExecutionContext(
 		msg.Job.Id.Hex(),
 		msg.Job.Pipeline.Pipeline,
 		tracker)
@@ -77,32 +74,14 @@ func main() {
 		return
 	}
 
-	// create a global engine object for pipeline execution
-	engine := pipeline.CreateEngine()
-	engine.
-		RegisterExtension(&modules.Shell{}).
-		RegisterExtension(&modules.WGet{}).
-		RegisterExtension(&modules.FFMpeg{})
-
-	// setup storage
-	if conf.MinIO != nil {
-		store, err := storage.ConnectMinIO(*conf.MinIO)
-		if err != nil {
-			srvlog.Crit("Could not connect to minio storage server", "error", err)
-			return
-		}
-
-		engine.RegisterExtension(&modules.Storage{Storage: &store})
-	}
-
 	// setup amqp
 	client := amqp.Create(conf.AMQP)
 	recvPipelineExecute = client.RegisterConsumer("pipeline_execute")
 	sendJobStatus = client.RegisterProducer("job_status")
 	sendJobMessage = client.RegisterProducer("job_message")
-	client.Start()
+	client.Run()
 
 	for payload := range recvPipelineExecute {
-		go executePipeline(srvlog, &engine, payload)
+		go executePipeline(srvlog, payload)
 	}
 }

@@ -2,7 +2,6 @@
 name: transcoding test
 stages:
 - stage: testing install and ffmpeg
-  environment: docker/alpine:latest
   tasks:
 
   - name: install ffmpeg
