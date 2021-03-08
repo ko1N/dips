@@ -1,3 +1,7 @@
+<p align="center">
+<img src="docs/logo.png" alt="mouseplay" title="mouseplay" />
+</p>
+
 # dips - distributed pipeline system
 
 dips is a pipelining system which allows for automated execution of simple workflows.
