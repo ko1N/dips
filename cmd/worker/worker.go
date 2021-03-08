@@ -75,11 +75,10 @@ func main() {
 	}
 
 	// setup amqp
-	client := amqp.Create(conf.AMQP)
+	client := amqp.NewAMQP(conf.AMQP)
 	recvPipelineExecute = client.RegisterConsumer("pipeline_execute")
 	sendJobStatus = client.RegisterProducer("job_status")
 	sendJobMessage = client.RegisterProducer("job_message")
-	client.Run()
 
 	for payload := range recvPipelineExecute {
 		go executePipeline(srvlog, payload)

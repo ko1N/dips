@@ -2,30 +2,23 @@ package client
 
 import "github.com/ko1N/dips/internal/amqp"
 
+// Client - Dips client instance
 type Client struct {
 	amqp        *amqp.Client
+	statusQueue (chan string)
+	logQueue    (chan string)
 	workers     []Worker
-	updateQueue (chan string)
 }
 
-// TODO: custom client config
+// NewClient - Creates a new Dips client
 func NewClient(host string) (*Client, error) {
-	client := amqp.Create(amqp.Config{
+	amqp := amqp.NewAMQP(amqp.Config{
 		Host: host,
 	})
-
-	/*
-		recvPipelineExecute := client.RegisterConsumer("pipeline_execute")
-		sendJobStatus := client.RegisterProducer("job_status")
-		sendJobMessage := client.RegisterProducer("job_message")
-	*/
-
 	return &Client{
-		amqp:    client,
-		workers: []Worker{},
+		amqp:        amqp,
+		statusQueue: amqp.RegisterProducer("dips.worker.status"),
+		logQueue:    amqp.RegisterProducer("dips.worker.log"),
+		workers:     []Worker{},
 	}, nil
-}
-
-func (self *Client) Run() {
-	self.amqp.Run()
 }

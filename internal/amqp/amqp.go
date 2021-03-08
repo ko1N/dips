@@ -21,17 +21,23 @@ type Config struct {
 	Host string `json:"host" toml:"host"`
 }
 
-// Create - will create a new AMQP Client object
-func Create(conf Config) *Client {
-	return &Client{
+// NewAMQP - will create a new AMQP Client object
+func NewAMQP(conf Config) *Client {
+	client := Client{
 		server:    conf.Host,
 		producers: make(map[string]chan string),
 		consumers: make(map[string]chan string),
 	}
+	client.run()
+	return &client
 }
 
 // RegisterProducer - creates a new producer channel and returns it
 func (c *Client) RegisterProducer(name string) chan string {
+	if c.producers[name] != nil {
+		return c.producers[name]
+	}
+
 	chn := make(chan string)
 	c.producers[name] = chn
 	return chn
@@ -39,13 +45,17 @@ func (c *Client) RegisterProducer(name string) chan string {
 
 // RegisterConsumer - creates a new consumer channel and returns it
 func (c *Client) RegisterConsumer(name string) chan string {
+	if c.consumers[name] != nil {
+		return c.consumers[name]
+	}
+
 	chn := make(chan string)
 	c.consumers[name] = chn
 	return chn
 }
 
 // Run - spawns a client in a new goroutine
-func (c *Client) Run() {
+func (c *Client) run() {
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
@@ -87,22 +97,19 @@ func (c *Client) Run() {
 }
 
 func handleProducer(ch *amqp.Channel, q amqp.Queue, goch chan string) {
-	for {
-		select {
-		case body := <-goch:
-			err := ch.Publish("",
-				q.Name,
-				false,
-				false,
-				amqp.Publishing{
-					ContentType: "application/json",
-					Body:        []byte(body),
-				})
-			if err != nil {
-				fmt.Printf("[AMQP] Error sending message\n")
-				goch <- body // re-queue failed message
-				return       // abort goroutine
-			}
+	for body := range goch {
+		err := ch.Publish("",
+			q.Name,
+			false,
+			false,
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        []byte(body),
+			})
+		if err != nil {
+			fmt.Printf("[AMQP] Error sending message\n")
+			goch <- body // re-queue failed message
+			return       // abort goroutine
 		}
 	}
 }

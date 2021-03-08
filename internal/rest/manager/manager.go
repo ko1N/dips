@@ -49,13 +49,12 @@ func CreateManagerAPI(conf ManagerAPIConfig) error {
 	messageHandler = conf.MessageHandler
 
 	// setup amqp
-	client := amqp.Create(conf.AMQP)
+	client := amqp.NewAMQP(conf.AMQP)
 	sendPipelineExecute = client.RegisterProducer("pipeline_execute")
 	recvJobStatus = client.RegisterConsumer("job_status")
 	recvJobMessage = client.RegisterConsumer("job_message")
 	go handleJobStatus()
 	go handleJobMessage()
-	client.Run()
 
 	/*
 		client.RegisterConsumerFunc("pipeline_status", func(msg []byte) {

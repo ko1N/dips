@@ -15,9 +15,13 @@ func main() {
 
 	cl.
 		NewWorker("shell").
-		Handler(shellHandler)
+		Handler(shellHandler).
+		Run()
 
-	cl.Run()
+	cl.
+		NewTask("shell").
+		Name("test task").
+		Dispatch()
 
 	fmt.Println("workers started")
 	for {
@@ -25,7 +29,7 @@ func main() {
 	}
 }
 
-func shellHandler(job *client.Job) error {
+func shellHandler(job *client.TaskContext) error {
 	fmt.Println("handling job")
 	return nil
 }
