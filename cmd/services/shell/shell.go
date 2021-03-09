@@ -21,6 +21,7 @@ func main() {
 	cl.
 		NewTask("shell").
 		Name("test task").
+		Parameters(map[string]interface{}{"param": "variant"}).
 		Dispatch()
 
 	fmt.Println("workers started")
@@ -30,6 +31,6 @@ func main() {
 }
 
 func shellHandler(job *client.TaskContext) error {
-	fmt.Println("handling job")
+	fmt.Printf("handling job %s: %s\n", job.TaskRequest.Name, job.TaskRequest.Params)
 	return nil
 }
