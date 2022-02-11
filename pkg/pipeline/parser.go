@@ -44,26 +44,26 @@ type Pipeline struct {
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
-func CreateFromBytes(data []byte) (Pipeline, error) {
+func CreateFromBytes(data []byte) (*Pipeline, error) {
 	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
-		return Pipeline{}, errors.New("Not a valid pipeline script. should start with `---`")
+		return nil, errors.New("Not a valid pipeline script. should start with `---`")
 	}
 
 	var script interface{}
 	err := yaml.Unmarshal(data, &script)
 	if err != nil {
-		return Pipeline{}, err
+		return nil, err
 	}
 
 	if s, ok := script.(map[interface{}]interface{}); ok {
 		return parsePipeline(s)
 	}
 
-	return Pipeline{}, errors.New("Not a valid pipeline script. Script should start with `name:` or `stages:`")
+	return nil, errors.New("Not a valid pipeline script. Script should start with `name:` or `stages:`")
 }
 
-func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
+func parsePipeline(script map[interface{}]interface{}) (*Pipeline, error) {
 	result := Pipeline{}
 
 	if name, ok := script["name"]; ok {
@@ -73,20 +73,20 @@ func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
 	var err error
 	result.Parameters, err = parseParameters(script)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	if stages, ok := script["stages"]; ok {
 		for _, s := range stages.([]interface{}) {
 			stage, err := parseStage(s.(map[interface{}]interface{}))
 			if err != nil {
-				return result, err
+				return nil, err
 			}
 			result.Stages = append(result.Stages, stage)
 		}
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func parseParameters(script map[interface{}]interface{}) ([]Parameter, error) {

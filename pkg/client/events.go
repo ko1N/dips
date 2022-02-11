@@ -2,17 +2,46 @@ package client
 
 import "encoding/json"
 
+// The event to be dispatched
 type Event struct {
 	client   *Client
 	status   *StatusEvent
-	log      *LogEvent
+	message  *MessageEvent
 	variable *VariableEvent
 }
 
+// the type of the job status update
+type StatusEventType uint
+
+const (
+	// progress update
+	ProgressEvent StatusEventType = 1
+)
+
 type StatusEvent struct {
+	JobID    string
+	TaskID   uint
+	Type     StatusEventType
+	Progress uint
+	//JobStatus string // TODO: enum
 }
 
-type LogEvent struct {
+// the type of the message
+type MessageEventType uint
+
+const (
+	StatusMessage MessageEventType = 0
+	ErrorMessage  MessageEventType = 1
+	StdInMessage  MessageEventType = 2
+	StdOutMessage MessageEventType = 3
+	StdErrMessage MessageEventType = 4
+)
+
+type MessageEvent struct {
+	JobID   string
+	TaskID  uint
+	Type    MessageEventType
+	Message string
 }
 
 type VariableEvent struct {
@@ -20,32 +49,32 @@ type VariableEvent struct {
 	Value interface{} `json:"value"`
 }
 
-func (client *Client) NewEvent() *Event {
+func (c *Client) NewEvent() *Event {
 	return &Event{
-		client: client,
+		client: c,
 	}
 }
 
-func (event *Event) Status(status *StatusEvent) *Event {
-	event.status = status
-	return event
+func (e *Event) Status(status *StatusEvent) *Event {
+	e.status = status
+	return e
 }
 
-func (event *Event) Log(log *LogEvent) *Event {
-	event.log = log
-	return event
+func (e *Event) Message(message *MessageEvent) *Event {
+	e.message = message
+	return e
 }
 
-func (event *Event) Variable(variable *VariableEvent) *Event {
-	event.variable = variable
-	return event
+func (e *Event) Variable(variable *VariableEvent) *Event {
+	e.variable = variable
+	return e
 }
 
-func (event *Event) Dispatch() {
-	if event.status != nil {
-		queue := event.client.amqp.RegisterProducer("dips.event.status")
+func (e *Event) Dispatch() {
+	if e.status != nil {
+		queue := e.client.amqp.RegisterProducer("dips.event.status")
 
-		request, err := json.Marshal(&event.status)
+		request, err := json.Marshal(&e.status)
 		if err != nil {
 			panic("Invalid status event: " + err.Error())
 		}
@@ -53,25 +82,99 @@ func (event *Event) Dispatch() {
 		queue <- string(request)
 	}
 
-	if event.log != nil {
-		queue := event.client.amqp.RegisterProducer("dips.event.log")
+	if e.message != nil {
+		queue := e.client.amqp.RegisterProducer("dips.event.message")
 
-		request, err := json.Marshal(&event.log)
+		request, err := json.Marshal(&e.message)
 		if err != nil {
-			panic("Invalid log event: " + err.Error())
+			panic("Invalid message event: " + err.Error())
 		}
 
 		queue <- string(request)
 	}
 
-	if event.variable != nil {
-		queue := event.client.amqp.RegisterProducer("dips.event.variable")
+	if e.variable != nil {
+		queue := e.client.amqp.RegisterProducer("dips.event.variable")
 
-		request, err := json.Marshal(&event.variable)
+		request, err := json.Marshal(&e.variable)
 		if err != nil {
 			panic("Invalid variable event: " + err.Error())
 		}
 
 		queue <- string(request)
+	}
+}
+
+type EventHandler struct {
+	client          *Client
+	statusHandler   func(*StatusEvent) error
+	messageHandler  func(*MessageEvent) error
+	variableHandler func(*VariableEvent) error
+}
+
+func (c *Client) NewEventHandler() *EventHandler {
+	return &EventHandler{
+		client: c,
+	}
+}
+
+func (h *EventHandler) HandleStatus(status func(*StatusEvent) error) *EventHandler {
+	h.statusHandler = status
+	return h
+}
+
+func (h *EventHandler) HandleMessage(message func(*MessageEvent) error) *EventHandler {
+	h.messageHandler = message
+	return h
+}
+
+func (h *EventHandler) HandleVariable(variable func(*VariableEvent) error) *EventHandler {
+	h.variableHandler = variable
+	return h
+}
+
+// Run - Starts a new goroutine for this event handler
+func (h *EventHandler) Run() {
+	// TODO: graceful shutdown
+	if h.statusHandler != nil {
+		go func() {
+			queue := h.client.amqp.RegisterProducer("dips.event.status")
+			for request := range queue {
+				var statusEvent StatusEvent
+				err := json.Unmarshal([]byte(request), &statusEvent)
+				if err != nil {
+					panic("Invalid status event: " + err.Error())
+				}
+				h.statusHandler(&statusEvent)
+			}
+		}()
+	}
+
+	if h.messageHandler != nil {
+		go func() {
+			queue := h.client.amqp.RegisterProducer("dips.event.message")
+			for request := range queue {
+				var messageEvent MessageEvent
+				err := json.Unmarshal([]byte(request), &messageEvent)
+				if err != nil {
+					panic("Invalid log event: " + err.Error())
+				}
+				h.messageHandler(&messageEvent)
+			}
+		}()
+	}
+
+	if h.variableHandler != nil {
+		go func() {
+			queue := h.client.amqp.RegisterProducer("dips.event.variable")
+			for request := range queue {
+				var variableEvent VariableEvent
+				err := json.Unmarshal([]byte(request), &variableEvent)
+				if err != nil {
+					panic("Invalid variable event: " + err.Error())
+				}
+				h.variableHandler(&variableEvent)
+			}
+		}()
 	}
 }

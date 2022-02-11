@@ -37,7 +37,6 @@ func (c *Client) RegisterProducer(name string) chan string {
 	if c.producers[name] != nil {
 		return c.producers[name]
 	}
-
 	chn := make(chan string)
 	c.producers[name] = chn
 	return chn
@@ -48,7 +47,6 @@ func (c *Client) RegisterConsumer(name string) chan string {
 	if c.consumers[name] != nil {
 		return c.consumers[name]
 	}
-
 	chn := make(chan string)
 	c.consumers[name] = chn
 	return chn

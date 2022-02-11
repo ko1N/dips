@@ -66,13 +66,14 @@ func (task *Task) Dispatch() {
 
 // TaskWorker - A worker service instance
 type TaskWorker struct {
+	client    *Client
 	taskQueue (chan string)
 	handler   func(*TaskContext) error
 }
 
 // TaskContext - The TaskContext that is being sent to the task handler
 type TaskContext struct {
-	//Client      *Client
+	Client  *Client
 	Worker  *TaskWorker
 	Request *TaskRequest
 
@@ -85,6 +86,7 @@ type TaskContext struct {
 func (client *Client) NewTaskWorker(name string) *TaskWorker {
 	// TODO: sanitize name
 	return &TaskWorker{
+		client:    client,
 		taskQueue: client.amqp.RegisterConsumer("dips.worker.task." + name),
 	}
 }
@@ -107,6 +109,7 @@ func (worker *TaskWorker) Run() {
 			}
 			if worker.handler != nil {
 				worker.handler(&TaskContext{
+					Client:  worker.client,
 					Worker:  worker,
 					Request: &taskRequest,
 				})

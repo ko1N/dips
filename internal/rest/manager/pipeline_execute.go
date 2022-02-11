@@ -14,11 +14,6 @@ type PipelineExecuteRequest struct {
 	Parameters []model.JobParameter `json:"parameters"`
 }
 
-// ExecutePipelineMessage - message sent from manager to worker when a pipeline is started
-type ExecutePipelineMessage struct {
-	Job *model.Job `json:"job"`
-}
-
 // PipelineExecute - executes a pipeline
 // @Summary executes a pipeline
 // @Description This method will execute the pipeline with the given id

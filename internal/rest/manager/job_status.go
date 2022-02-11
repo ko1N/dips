@@ -1,10 +1,7 @@
 package manager
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/ko1N/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/client"
 )
 
 /*
@@ -33,15 +30,8 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func handleJobStatus() {
-	for status := range recvJobStatus {
-		msg := tracking.JobStatusMessage{}
-		err := json.Unmarshal([]byte(status), &msg)
-		if err != nil {
-			fmt.Printf("unable to unmarshal status message")
-			continue
-		}
-
+func handleJobStatus(ev *client.EventHandler) {
+	ev.HandleStatus(func(msg *client.StatusEvent) error {
 		/*
 			// find job
 			job, err := jobs.FindJobByID(msg.JobID)
@@ -84,5 +74,7 @@ func handleJobStatus() {
 
 			job.Save()
 		*/
-	}
+
+		return nil
+	})
 }

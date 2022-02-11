@@ -1,10 +1,8 @@
 package tracking
 
 import (
-	"encoding/json"
-	"strconv"
-
 	log "github.com/inconshreveable/log15"
+	"github.com/ko1N/dips/pkg/client"
 	"github.com/mattn/go-colorable"
 )
 
@@ -12,10 +10,9 @@ import (
 
 // JobTrackerConfig - config for a job tracker instance
 type JobTrackerConfig struct {
-	Logger          log.Logger
-	ProgressChannel chan string
-	MessageChannel  chan string
-	JobID           string
+	Logger log.Logger
+	Client *client.Client
+	JobID  string
 }
 
 // JobTracker - tracks job status, progress and logs
@@ -25,73 +22,23 @@ type JobTracker struct {
 	taskID uint
 }
 
-// TODO: this should be in a seperate amqp model ->
-
-// JobStatusType - the type of the job status update
-type JobStatusType uint
-
-const (
-	// JobStatusLog - log info entry
-	JobStatusLog JobStatusType = 0
-	// JobStatusProgress - progress update
-	JobStatusProgress JobStatusType = 1
-	// JobStatusStdOut - stdout update
-	JobStatusStdOut JobStatusType = 2
-	// JobStatusStdErr - stderr update
-	JobStatusStdErr JobStatusType = 3
-)
-
-// JobStatusMessage - a job status update message
-type JobStatusMessage struct {
-	JobID  string
-	Type   JobStatusType
-	TaskID uint
-	Value  string
-}
-
-// JobMessageType - the type of the job message
-type JobMessageType uint
-
-const (
-	// JobMessageStatus - stderr message
-	JobMessageStatus JobMessageType = 0
-	// JobMessageError - stderr message
-	JobMessageError JobMessageType = 1
-	// JobMessageStdIn - stdin message
-	JobMessageStdIn JobMessageType = 2
-	// JobMessageStdOut - stdout message
-	JobMessageStdOut JobMessageType = 3
-	// JobMessageStdErr - stderr message
-	JobMessageStdErr JobMessageType = 4
-)
-
-// JobMessage - describes a jobs message
-type JobMessage struct {
-	JobID   string
-	Type    JobMessageType
-	Message string
-}
-
 // CreateJobTracker - creates a new job tracking instance
 func CreateJobTracker(conf JobTrackerConfig) JobTracker {
 	jobLog := conf.Logger.New("job", conf.JobID)
 	jobLog.SetHandler(log.MultiHandler(
 		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
 		log.FuncHandler(func(r *log.Record) error {
-			if conf.ProgressChannel == nil {
+			if conf.Client == nil {
 				return nil
 			}
-
-			status, err := json.Marshal(JobStatusMessage{
-				JobID:  conf.JobID,
-				Type:   JobStatusLog,
-				TaskID: 0,
-				Value:  r.Msg,
-			})
-			if err != nil {
-				return err
-			}
-			conf.ProgressChannel <- string(status)
+			conf.Client.NewEvent().
+				Message(&client.MessageEvent{
+					JobID:   conf.JobID,
+					TaskID:  0,
+					Type:    client.StatusMessage,
+					Message: r.Msg,
+				}).
+				Dispatch()
 			return nil
 		}),
 	))
@@ -119,70 +66,64 @@ func (t *JobTracker) TrackTask(taskID uint) {
 
 // TrackProgress - tracks progress of the current task
 func (t *JobTracker) TrackProgress(progress uint) {
-	if t.config.ProgressChannel == nil {
+	if t.config.Client == nil {
 		return
 	}
-
-	status, err := json.Marshal(JobStatusMessage{
-		JobID:  t.config.JobID,
-		Type:   JobStatusProgress,
-		TaskID: t.taskID,
-		Value:  strconv.Itoa(int(progress)), // TODO: fix types
-	})
-	if err != nil {
-		//t.log.Crit("unable to marshal progress message")
-		return
-	}
-	t.config.ProgressChannel <- string(status)
+	t.config.Client.NewEvent().
+		Status(&client.StatusEvent{
+			JobID:    t.config.JobID,
+			TaskID:   t.taskID,
+			Type:     client.ProgressEvent,
+			Progress: progress,
+		}).
+		Dispatch()
 }
 
 // Message - tracks messages of the current task
-func (t *JobTracker) Message(mt JobMessageType, msg string) {
-	if t.config.MessageChannel == nil || msg == "" {
+func (t *JobTracker) Message(mt client.MessageEventType, msg string) {
+	if t.config.Client == nil || msg == "" {
 		// do not persist empty messages
 		return
 	}
 
 	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
-	status, err := json.Marshal(JobMessage{
-		JobID:   t.config.JobID,
-		Type:    mt,
-		Message: msg,
-	})
-	if err != nil {
-		//t.log.Crit("unable to marshal stderr message")
-		return
-	}
-	t.config.MessageChannel <- string(status)
+	t.config.Client.NewEvent().
+		Message(&client.MessageEvent{
+			JobID:   t.config.JobID,
+			TaskID:  t.taskID,
+			Type:    mt,
+			Message: msg,
+		}).
+		Dispatch()
 }
 
 // Status - tracks a status message
 func (t *JobTracker) Status(msg string) {
 	t.Logger().Info(msg)
-	t.Message(JobMessageStatus, msg)
+	t.Message(client.StatusMessage, msg)
 }
 
 func (t *JobTracker) Error(msg string, err error) {
 	if err != nil {
 		t.Logger().Crit(msg, "error", err)
-		t.Message(JobMessageError, msg+" ("+err.Error()+")")
+		t.Message(client.ErrorMessage, msg+" ("+err.Error()+")")
 	} else {
 		t.Logger().Crit(msg)
-		t.Message(JobMessageError, msg)
+		t.Message(client.ErrorMessage, msg)
 	}
 }
 
 // StdIn - tracks a stdin message
 func (t *JobTracker) StdIn(msg string) {
-	t.Message(JobMessageStdIn, msg)
+	t.Message(client.StdInMessage, msg)
 }
 
 // StdOut - tracks a stdin message
 func (t *JobTracker) StdOut(msg string) {
-	t.Message(JobMessageStdOut, msg)
+	t.Message(client.StdOutMessage, msg)
 }
 
 // StdErr - tracks a stdin message
 func (t *JobTracker) StdErr(msg string) {
-	t.Message(JobMessageStdErr, msg)
+	t.Message(client.StdErrMessage, msg)
 }

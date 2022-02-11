@@ -53,8 +53,9 @@ func CreateManagerAPI(conf ManagerAPIConfig) error {
 	sendPipelineExecute = client.RegisterProducer("pipeline_execute")
 	recvJobStatus = client.RegisterConsumer("job_status")
 	recvJobMessage = client.RegisterConsumer("job_message")
-	go handleJobStatus()
-	go handleJobMessage()
+
+	//go handleJobStatus()
+	//go handleJobMessage()
 
 	/*
 		client.RegisterConsumerFunc("pipeline_status", func(msg []byte) {
