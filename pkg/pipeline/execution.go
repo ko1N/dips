@@ -68,7 +68,11 @@ func (e *ExecutionContext) Run() error {
 
 			// dispatch task
 			if e.taskHandler != nil {
-				(e.taskHandler)(&task)
+				err := (e.taskHandler)(&task)
+				if err != nil {
+					//e.Tracker.Logger().Error("error executing pipeline task", "service", task.Service, "error", err)
+					return err
+				}
 			}
 
 			// TODO: new func + throw error if command was not found!

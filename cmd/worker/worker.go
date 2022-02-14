@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"io/ioutil"
+	"time"
 
 	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/internal/amqp"
@@ -87,12 +88,12 @@ func handleJob(job *client.JobContext) error {
 	exec := pipeline.
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
 		TaskHandler(func(task *pipeline.Task) error {
-			job.Client.NewTask(task.Service).
+			return job.Client.NewTask(task.Service).
 				Name(task.Name).
+				Timeout(10 * time.Second).
 				//Parameters(task.). // TODO: parameters
 				Dispatch().
 				Await()
-			return nil
 		})
 
 	// setup parameters
@@ -103,7 +104,7 @@ func handleJob(job *client.JobContext) error {
 	// run execution
 	err = exec.Run()
 	if err != nil {
-		tracker.Logger().Crit("unable to execute pipeline", "error", err)
+		tracker.Logger().Crit("error while executing pipeline", "error", err)
 	}
 
 	return nil

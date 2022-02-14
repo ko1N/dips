@@ -2,6 +2,10 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/internal/persistence/database/model"
@@ -11,6 +15,7 @@ import (
 // Task - A task instance to be dispatched to a worker
 type Task struct {
 	id           string
+	timeout      time.Duration
 	taskRequests (chan amqp.Message)
 	taskResults  (chan amqp.Message)
 	job          *model.Job
@@ -37,9 +42,16 @@ func (client *Client) NewTask(service string) *Task {
 	taskId := bson.NewObjectId().Hex()
 	return &Task{
 		id:           taskId,
+		timeout:      30 * time.Minute,
 		taskRequests: client.amqp.RegisterProducer("dips.worker.task." + service + ".request"),
 		taskResults:  client.amqp.RegisterResponseConsumer("dips.worker.task."+service+".result", taskId),
 	}
+}
+
+// Sets the timeout of the task
+func (t *Task) Timeout(timeout time.Duration) *Task {
+	t.timeout = timeout
+	return t
 }
 
 // Job - Sets the job the task belongs to
@@ -74,10 +86,9 @@ func (t *Task) Dispatch() *DispatchedTask {
 		panic("Invalid task request: " + err.Error())
 	}
 
-	// TODO: timeout parameter
 	t.taskRequests <- amqp.Message{
-		//Expiration: "100000",
-		Payload: string(request),
+		Expiration: strconv.Itoa(int(t.timeout.Milliseconds())), // TODO: check if this is correct?
+		Payload:    string(request),
 	}
 
 	return &DispatchedTask{
@@ -86,8 +97,23 @@ func (t *Task) Dispatch() *DispatchedTask {
 }
 
 func (t *DispatchedTask) Await() error {
-	// TODO: define task result?
-	<-t.task.taskResults
+	now := time.Now()
+outer:
+	for {
+		select {
+		case result := <-t.task.taskResults:
+			fmt.Println(result)
+			break outer
+
+		default:
+			if now.Add(t.task.timeout).Before(time.Now()) {
+				return errors.New("Timeout reached while executing task")
+			}
+			time.Sleep(1 * time.Millisecond)
+			break
+		}
+	}
+
 	return nil
 }
 

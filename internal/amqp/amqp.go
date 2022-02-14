@@ -135,13 +135,13 @@ func (c *Client) run() {
 					// update consumers and producers
 					err = c.declareProducers(ch)
 					if err != nil {
-						log.Println("[AMQP] Failed to declare producer queues")
+						log.Println("[AMQP] Failed to declare producer queues: " + err.Error())
 						continue outer
 					}
 
 					err = c.declareConsumers(ch)
 					if err != nil {
-						log.Println("[AMQP] Failed to declare consumer queues")
+						log.Println("[AMQP] Failed to declare consumer queues: " + err.Error())
 						continue outer
 					}
 
