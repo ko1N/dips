@@ -2,7 +2,10 @@ package pipeline
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
@@ -14,7 +17,7 @@ type ExecutionContext struct {
 	Pipeline    *Pipeline
 	Tracker     tracking.JobTracker
 	Variables   map[string]tengo.Object
-	taskHandler func(*Task) (*ExecutionResult, error)
+	taskHandler func(*Task, map[string]string) (*ExecutionResult, error)
 }
 
 type ExecutionResult struct {
@@ -23,14 +26,7 @@ type ExecutionResult struct {
 }
 
 func (r *ExecutionResult) ToScriptObject() tengo.Object {
-	if r.Error == nil {
-		return &tengo.Map{
-			Value: map[string]tengo.Object{
-				"failed": tengo.FalseValue,
-				"error":  nil,
-				// TODO: key value mapping
-			}}
-	} else {
+	if r.Error != nil {
 		return &tengo.Map{
 			Value: map[string]tengo.Object{
 				"failed": tengo.TrueValue,
@@ -38,6 +34,29 @@ func (r *ExecutionResult) ToScriptObject() tengo.Object {
 				// TODO: key value mapping
 			}}
 	}
+
+	result := &tengo.Map{
+		Value: map[string]tengo.Object{
+			"failed": tengo.FalseValue,
+			"error":  nil,
+			// TODO: key value mapping
+		}}
+
+	for key, value := range r.Output {
+
+		switch v := value.(type) {
+		case string:
+			result.Value[key] = &tengo.String{Value: v}
+		case int:
+			result.Value[key] = &tengo.Int{Value: int64(v)}
+		case float64:
+			result.Value[key] = &tengo.Float{Value: float64(v)}
+		default:
+			fmt.Println("unknown type")
+		}
+	}
+
+	return result
 }
 
 func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) *ExecutionContext {
@@ -50,7 +69,7 @@ func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobT
 }
 
 // Handler - Sets the handler for this worker
-func (e *ExecutionContext) TaskHandler(handler func(*Task) (*ExecutionResult, error)) *ExecutionContext {
+func (e *ExecutionContext) TaskHandler(handler func(*Task, map[string]string) (*ExecutionResult, error)) *ExecutionContext {
 	// TODO: multiple handlers
 	e.taskHandler = handler
 	return e
@@ -65,11 +84,11 @@ func (e *ExecutionContext) Run() error {
 	// TODO: move context into seperate file
 	// TODO: decouple this function into ExecutionContext
 
-	var taskID uint
+	expression := regexp.MustCompile(`{{.*?}}`)
+
+	taskID := uint(1)
 	for _, stage := range e.Pipeline.Stages {
 		e.Tracker.Status("------ Performing Stage: " + stage.Name)
-
-		//expression := regexp.MustCompile(`{{.*?}}`)
 
 		// execute tasks in pipeline
 		for _, task := range stage.Tasks {
@@ -86,13 +105,28 @@ func (e *ExecutionContext) Run() error {
 				}
 				if res != "true" {
 					e.Tracker.Status("`when` condition not met, skipping task")
+					taskID++
 					continue
 				}
 			}
 
 			// dispatch task
 			if e.taskHandler != nil {
-				result, err := (e.taskHandler)(&task)
+				// TODO: put this logic in seperate objects
+				input := make(map[string]string)
+				for key, value := range task.Input {
+					input[key] = string(expression.ReplaceAllFunc([]byte(value), func(m []byte) []byte {
+						t := strings.TrimSpace(string(m[2 : len(m)-2]))
+						v, err := (&Expression{Script: string(t)}).Evaluate(e.Variables)
+						if err != nil {
+							// TODO:
+							panic(err)
+						}
+						return []byte(v)
+					}))
+				}
+
+				result, err := (e.taskHandler)(&task, input)
 				if err != nil {
 					e.Tracker.Error("task execution failed", err)
 					return err

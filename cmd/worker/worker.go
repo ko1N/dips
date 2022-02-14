@@ -87,12 +87,12 @@ func handleJob(job *client.JobContext) error {
 	// execute pipeline on engine
 	exec := pipeline.
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
-		TaskHandler(func(task *pipeline.Task) (*pipeline.ExecutionResult, error) {
+		TaskHandler(func(task *pipeline.Task, input map[string]string) (*pipeline.ExecutionResult, error) {
 			result, err := job.Client.
 				NewTask(task.Service).
 				Name(task.Name).
 				Timeout(10 * time.Second).
-				//Parameters(task.). // TODO: parameters
+				Parameters(input).
 				Dispatch().
 				Await()
 			if err != nil {

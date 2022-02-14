@@ -150,11 +150,14 @@ func parseTask(script map[interface{}]interface{}) (*Task, error) {
 			break
 
 		case "input":
+			// TODO: LIST
 			result.Input = make(map[string]string)
 			if val, ok := value.(map[interface{}]interface{}); ok {
 				for key, val := range val {
 					result.Input[key.(string)] = val.(string)
 				}
+			} else if val, ok := value.(string); ok {
+				result.Input[""] = val
 			}
 			break
 

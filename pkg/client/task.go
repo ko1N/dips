@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -22,16 +21,16 @@ type Task struct {
 	taskResults  (chan amqp.Message)
 	job          *model.Job
 	name         string
-	params       map[string]interface{}
+	params       map[string]string
 }
 
 // TaskRequest - Request to start a task
 type TaskRequest struct {
-	TaskID  string                 `json:"id" bson:"id"`
-	Timeout time.Duration          `json:"timeout" bson:"timeout"`
-	Job     *model.Job             `json:"job" bson:"job"`
-	Name    string                 `json:"name" bson:"name"`
-	Params  map[string]interface{} `json:"params" bson:"params"`
+	TaskID  string            `json:"id" bson:"id"`
+	Timeout time.Duration     `json:"timeout" bson:"timeout"`
+	Job     *model.Job        `json:"job" bson:"job"`
+	Name    string            `json:"name" bson:"name"`
+	Params  map[string]string `json:"params" bson:"params"`
 }
 
 // A task that has been dispatched to a worker that awaits a response
@@ -75,7 +74,7 @@ func (t *Task) Name(name string) *Task {
 }
 
 // Parameters - Sets the input parameters of the task
-func (t *Task) Parameters(params map[string]interface{}) *Task {
+func (t *Task) Parameters(params map[string]string) *Task {
 	t.params = params
 	return t
 }
@@ -115,7 +114,6 @@ func (t *DispatchedTask) Await() (*TaskResult, error) {
 			if err != nil {
 
 			}
-			fmt.Println(result)
 			if tr.Error != nil {
 				return nil, errors.New(*tr.Error)
 			}

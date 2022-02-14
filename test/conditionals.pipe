@@ -11,21 +11,17 @@ stages:
 
   - name: try execute /usr/bin/foo
     service: shell
-    input:
-      - /usr/bin/foo
+    input: /usr/bin/foo
     register: foo_result
     ignore_errors: "true"
 
   - service: shell
-    input:
-      - "echo {{ foo_result.rc }}"
+    input: "echo {{ foo_result.rc }}"
 
   - service: shell
-    input:
-      - /usr/bin/bar
+    input: /usr/bin/bar
     when: foo_result.rc == 5
 
   - service: shell
-    input:
-      - /usr/bin/bar
+    input: /usr/bin/bar
     when: foo_result.rc != 0
