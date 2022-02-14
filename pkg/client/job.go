@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/ko1N/dips/internal/persistence/database/model"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Job struct {
@@ -39,7 +40,9 @@ func (j *Job) Parameters(params map[string]interface{}) *Job {
 func (j *Job) Dispatch() {
 	jobRequest := JobRequest{
 		Job: j.job,
+		// TODO: params
 	}
+	jobRequest.Job.Id = bson.NewObjectId()
 
 	request, err := json.Marshal(&jobRequest)
 	if err != nil {

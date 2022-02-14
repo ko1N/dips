@@ -23,7 +23,7 @@ type JobTracker struct {
 }
 
 // CreateJobTracker - creates a new job tracking instance
-func CreateJobTracker(conf JobTrackerConfig) JobTracker {
+func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
 	jobLog := conf.Logger.New("job", conf.JobID)
 	jobLog.SetHandler(log.MultiHandler(
 		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
@@ -44,11 +44,11 @@ func CreateJobTracker(conf JobTrackerConfig) JobTracker {
 	))
 
 	tracker := JobTracker{
-		config: conf,
+		config: *conf,
 		jobLog: jobLog,
 		taskID: 0,
 	}
-	tracker.Logger().Info("job `" + conf.JobID + "` created")
+	tracker.Logger().Info("tracker for job `" + conf.JobID + "` created")
 
 	return tracker
 }

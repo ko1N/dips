@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/internal/amqp"
+	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/pkg/client"
 	"github.com/ko1N/dips/pkg/pipeline"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
@@ -20,6 +22,9 @@ type config struct {
 }
 
 func main() {
+	pipelinePtr := flag.String("pipeline", "", "the pipeline to execute")
+	flag.Parse()
+
 	// create global logger for this instance
 	srvlog := log.New("cmd", "worker")
 
@@ -45,7 +50,21 @@ func main() {
 		Handler(handleJob).
 		Run()
 
-	fmt.Println("job handlers started")
+		// TEST
+	// parse pipeline
+	content, err := ioutil.ReadFile(*pipelinePtr)
+	if err != nil {
+		srvlog.Crit("unable to open pipeline script file", "error", err)
+	}
+	cl.NewJob().
+		Job(&model.Job{
+			Name: "test",
+			Pipeline: &model.Pipeline{
+				Script: content,
+			},
+		}).
+		Dispatch()
+
 	for {
 		time.Sleep(1 * time.Second)
 	}
@@ -55,22 +74,30 @@ func main() {
 // TODO: send status updates containing raw cmd exec log
 func handleJob(job *client.JobContext) error {
 	// create logging instance for this pipeline
-	tracker := tracking.CreateJobTracker(tracking.JobTrackerConfig{
+	tracker := tracking.CreateJobTracker(&tracking.JobTrackerConfig{
 		Logger: log.New("cmd", "worker"), // TODO: dep injection
 		Client: job.Client,
 		JobID:  job.Request.Job.Id.Hex(),
 	})
 
-	pi, err := pipeline.CreateFromBytes(job.Request.Job.Pipeline.Pipeline)
+	pi, err := pipeline.CreateFromBytes(job.Request.Job.Pipeline.Script)
 	if err != nil {
 		tracker.Logger().Crit("unable to create pipeline from bytes", "error", err)
+		return errors.New("Unable to create pipeline from bytes")
 	}
 
 	// execute pipeline on engine
 	exec := pipeline.NewExecutionContext(
 		job.Request.Job.Id.Hex(),
 		pi,
-		tracker)
+		tracker).
+		TaskHandler(func(task *pipeline.Task) error {
+			job.Client.NewTask(task.Service).
+				Name(task.Name).
+				//Parameters(task.). // TODO: parameters
+				Dispatch()
+			return nil
+		})
 
 	// setup parameters
 	for paramName, paramValue := range job.Request.Params {

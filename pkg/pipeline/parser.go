@@ -130,14 +130,14 @@ func parseTasks(script map[interface{}]interface{}) ([]Task, error) {
 			if err != nil {
 				return result, err
 			}
-			result = append(result, _task)
+			result = append(result, *_task)
 		}
 	}
 	return result, nil
 }
 
-func parseTask(script map[interface{}]interface{}) (Task, error) {
-	result := Task{}
+func parseTask(script map[interface{}]interface{}) (*Task, error) {
+	result := &Task{}
 
 	for key, value := range script {
 		switch key.(string) {
@@ -174,11 +174,11 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 					if str, ok := val.(string); ok {
 						result.Notify = append(result.Notify, str)
 					} else {
-						return result, errors.New("Invalid syntax when parsing \"notify\". Should be a string or a list of strings")
+						return nil, errors.New("Invalid syntax when parsing \"notify\". Should be a string or a list of strings")
 					}
 				}
 			} else {
-				return result, errors.New("Invalid syntax when parsing \"notify\"")
+				return nil, errors.New("Invalid syntax when parsing \"notify\"")
 			}
 			break
 
@@ -191,6 +191,11 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 		default:
 			break
 		}
+	}
+
+	// TODO: sanitize task
+	if result.Service == "" {
+		return nil, errors.New("task requires a service")
 	}
 
 	return result, nil

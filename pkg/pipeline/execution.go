@@ -1,16 +1,19 @@
 package pipeline
 
 import (
+	"strconv"
+
 	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 // ExecutionContext - context for a execution
 type ExecutionContext struct {
-	JobID     string
-	Pipeline  *Pipeline
-	Tracker   tracking.JobTracker
-	Variables map[string]tengo.Object
+	JobID       string
+	Pipeline    *Pipeline
+	Tracker     tracking.JobTracker
+	Variables   map[string]tengo.Object
+	taskHandler func(*Task) error
 }
 
 func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) *ExecutionContext {
@@ -20,6 +23,13 @@ func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobT
 		Tracker:   tracker,
 		Variables: make(map[string]tengo.Object),
 	}
+}
+
+// Handler - Sets the handler for this worker
+func (e *ExecutionContext) TaskHandler(handler func(*Task) error) *ExecutionContext {
+	// TODO: multiple handlers
+	e.taskHandler = handler
+	return e
 }
 
 // Run - runs the execution
@@ -39,7 +49,7 @@ func (e *ExecutionContext) Run() error {
 
 		// execute tasks in pipeline
 		for _, task := range stage.Tasks {
-			e.Tracker.Status("--- Executing Task: " + task.Name)
+			e.Tracker.Status("--- Executing Task " + strconv.Itoa(int(taskID)) + ": " + task.Service + " (" + task.Name + ")")
 			e.Tracker.TrackTask(taskID)
 
 			// TODO: put this logic in seperate objects
@@ -54,6 +64,11 @@ func (e *ExecutionContext) Run() error {
 					e.Tracker.Status("`when` condition not met, skipping task")
 					continue
 				}
+			}
+
+			// dispatch task
+			if e.taskHandler != nil {
+				(e.taskHandler)(&task)
 			}
 
 			// TODO: new func + throw error if command was not found!

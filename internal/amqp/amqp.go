@@ -8,6 +8,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const messageBuffer int = 1000
+
 // Client - Simple AMQP Client wrapper
 type Client struct {
 	server    string
@@ -32,12 +34,15 @@ func NewAMQP(conf Config) *Client {
 	return &client
 }
 
+// TODO: allow producers/consumers to be registered while amqp is running :)
+// TODO: guarantee thread safety
+
 // RegisterProducer - creates a new producer channel and returns it
 func (c *Client) RegisterProducer(name string) chan string {
 	if c.producers[name] != nil {
 		return c.producers[name]
 	}
-	chn := make(chan string)
+	chn := make(chan string, messageBuffer)
 	c.producers[name] = chn
 	return chn
 }
@@ -47,7 +52,7 @@ func (c *Client) RegisterConsumer(name string) chan string {
 	if c.consumers[name] != nil {
 		return c.consumers[name]
 	}
-	chn := make(chan string)
+	chn := make(chan string, messageBuffer)
 	c.consumers[name] = chn
 	return chn
 }
