@@ -36,20 +36,22 @@ func (j *Job) Parameters(params map[string]interface{}) *Job {
 	return j
 }
 
-// Dispatch - Dispatches the task to the message queue
+// Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
-	jobRequest := JobRequest{
-		Job: j.job,
-		// TODO: params
-	}
-	jobRequest.Job.Id = bson.NewObjectId()
+	go func() {
+		jobRequest := JobRequest{
+			Job: j.job,
+			// TODO: params
+		}
+		jobRequest.Job.Id = bson.NewObjectId()
 
-	request, err := json.Marshal(&jobRequest)
-	if err != nil {
-		panic("Invalid job request: " + err.Error())
-	}
+		request, err := json.Marshal(&jobRequest)
+		if err != nil {
+			panic("Invalid job request: " + err.Error())
+		}
 
-	j.jobQueue <- string(request)
+		j.jobQueue <- string(request)
+	}()
 }
 
 type JobWorker struct {

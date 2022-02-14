@@ -48,20 +48,22 @@ func (task *Task) Parameters(params map[string]interface{}) *Task {
 	return task
 }
 
-// Dispatch - Dispatches the task to the message queue
+// Dispatches the task (and never blocks)
 func (task *Task) Dispatch() {
-	taskRequest := TaskRequest{
-		Job:    task.job,
-		Name:   task.name,
-		Params: task.params,
-	}
+	go func() {
+		taskRequest := TaskRequest{
+			Job:    task.job,
+			Name:   task.name,
+			Params: task.params,
+		}
 
-	request, err := json.Marshal(&taskRequest)
-	if err != nil {
-		panic("Invalid task request: " + err.Error())
-	}
+		request, err := json.Marshal(&taskRequest)
+		if err != nil {
+			panic("Invalid task request: " + err.Error())
+		}
 
-	task.taskQueue <- string(request)
+		task.taskQueue <- string(request)
+	}()
 }
 
 // TaskWorker - A worker service instance

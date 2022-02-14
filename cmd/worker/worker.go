@@ -87,10 +87,8 @@ func handleJob(job *client.JobContext) error {
 	}
 
 	// execute pipeline on engine
-	exec := pipeline.NewExecutionContext(
-		job.Request.Job.Id.Hex(),
-		pi,
-		tracker).
+	exec := pipeline.
+		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
 		TaskHandler(func(task *pipeline.Task) error {
 			job.Client.NewTask(task.Service).
 				Name(task.Name).
