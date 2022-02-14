@@ -10,6 +10,7 @@ import (
 const messageBuffer int = 1000
 
 type Message struct {
+	Expiration    string
 	CorrelationId string
 	Payload       string
 }
@@ -47,7 +48,6 @@ func NewAMQP(conf Config) *Client {
 	return &client
 }
 
-// TODO: allow producers/consumers to be registered while amqp is running :)
 // TODO: guarantee thread safety
 
 // RegisterProducer - creates a new producer channel and returns it
@@ -122,8 +122,6 @@ func (c *Client) run() {
 			}
 			defer ch.Close()
 
-			// TODO: do not recreate producers/consumers
-
 		inner:
 			for {
 				select {
@@ -166,6 +164,7 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
 				ContentType:   "application/json",
 				Body:          []byte(msg.Payload),
 				CorrelationId: msg.CorrelationId,
+				Expiration:    msg.Expiration,
 			})
 		if err != nil {
 			//fmt.Printf("[AMQP] Error sending message, requeueing\n")

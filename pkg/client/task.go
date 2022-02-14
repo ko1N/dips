@@ -74,7 +74,9 @@ func (t *Task) Dispatch() *DispatchedTask {
 		panic("Invalid task request: " + err.Error())
 	}
 
+	// TODO: timeout parameter
 	t.taskRequests <- amqp.Message{
+		//Expiration: "100000",
 		Payload: string(request),
 	}
 

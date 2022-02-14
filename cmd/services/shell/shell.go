@@ -13,50 +13,19 @@ func main() {
 		panic(err)
 	}
 
-	/*
-		cl.
-			NewTaskWorker("shell").
-			Handler(shellHandler).
-			Run()
-
-		cl.
-			NewTask("shell").
-			Name("test task").
-			Parameters(map[string]interface{}{"param": "variant"}).
-			Dispatch()
-	*/
-
 	cl.
-		NewEventHandler().
-		HandleVariable(variableHandler).
+		NewTaskWorker("shell").
+		Handler(shellHandler).
 		Run()
 
-	fmt.Println("workers started")
-	for {
-		time.Sleep(1 * time.Second)
-	}
-}
+	fmt.Println("shell worker started")
 
-func variableHandler(variable *client.VariableEvent) error {
-	fmt.Printf("Setting %s = '%s'\n", variable.Name, variable.Value)
-	return nil
-}
-
-func jobHandler(job *client.JobContext) error {
-	fmt.Printf("handling job %+v\n", job.Request.Job)
-
-	job.Client.
-		NewEvent().
-		Variable(&client.VariableEvent{
-			Name:  "testVariable",
-			Value: "testValue",
-		}).
-		Dispatch()
-
-	return nil
+	signal := make(chan struct{})
+	<-signal
 }
 
 func shellHandler(task *client.TaskContext) error {
-	fmt.Printf("handling job %s: %s\n", task.Request.Name, task.Request.Params)
+	fmt.Printf("handling 'shell' task %s: %s\n", task.Request.Name, task.Request.Params)
+	time.Sleep(1 * time.Second)
 	return nil
 }
