@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/d5/tengo/v2"
@@ -13,7 +14,30 @@ type ExecutionContext struct {
 	Pipeline    *Pipeline
 	Tracker     tracking.JobTracker
 	Variables   map[string]tengo.Object
-	taskHandler func(*Task) error
+	taskHandler func(*Task) (*ExecutionResult, error)
+}
+
+type ExecutionResult struct {
+	Error  *string                `json:"error" bson:"error"`
+	Output map[string]interface{} `json:"output" bson:"output"`
+}
+
+func (r *ExecutionResult) ToScriptObject() tengo.Object {
+	if r.Error == nil {
+		return &tengo.Map{
+			Value: map[string]tengo.Object{
+				"failed": tengo.FalseValue,
+				"error":  nil,
+				// TODO: key value mapping
+			}}
+	} else {
+		return &tengo.Map{
+			Value: map[string]tengo.Object{
+				"failed": tengo.TrueValue,
+				"error":  &tengo.String{Value: *r.Error},
+				// TODO: key value mapping
+			}}
+	}
 }
 
 func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) *ExecutionContext {
@@ -26,7 +50,7 @@ func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobT
 }
 
 // Handler - Sets the handler for this worker
-func (e *ExecutionContext) TaskHandler(handler func(*Task) error) *ExecutionContext {
+func (e *ExecutionContext) TaskHandler(handler func(*Task) (*ExecutionResult, error)) *ExecutionContext {
 	// TODO: multiple handlers
 	e.taskHandler = handler
 	return e
@@ -68,10 +92,21 @@ func (e *ExecutionContext) Run() error {
 
 			// dispatch task
 			if e.taskHandler != nil {
-				err := (e.taskHandler)(&task)
+				result, err := (e.taskHandler)(&task)
 				if err != nil {
-					//e.Tracker.Logger().Error("error executing pipeline task", "service", task.Service, "error", err)
+					e.Tracker.Error("task execution failed", err)
 					return err
+				}
+
+				// TODO: duistingish between service error and actual execution error
+				if !task.IgnoreErrors && err != nil {
+					e.Tracker.Error("aborting pipeline execution", errors.New("task failed to exit properly ("+err.Error()+")"))
+					return nil
+				}
+
+				// convert result into tengo objects and store it
+				if task.Register != "" {
+					e.Variables[task.Register] = result.ToScriptObject()
 				}
 			}
 
