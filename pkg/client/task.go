@@ -12,6 +12,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+const defaultTaskTimeout = 3 * time.Minute
+
 // Task - A task instance to be dispatched to a worker
 type Task struct {
 	id           string
@@ -25,15 +27,21 @@ type Task struct {
 
 // TaskRequest - Request to start a task
 type TaskRequest struct {
-	TaskID string                 `json:"id" bson:"id"`
-	Job    *model.Job             `json:"job" bson:"job"`
-	Name   string                 `json:"name" bson:"name"`
-	Params map[string]interface{} `json:"params" bson:"params"`
+	TaskID  string                 `json:"id" bson:"id"`
+	Timeout time.Duration          `json:"timeout" bson:"timeout"`
+	Job     *model.Job             `json:"job" bson:"job"`
+	Name    string                 `json:"name" bson:"name"`
+	Params  map[string]interface{} `json:"params" bson:"params"`
 }
 
 // A task that has been dispatched to a worker that awaits a response
 type DispatchedTask struct {
 	task *Task
+}
+
+type TaskResult struct {
+	Error  *string                `json:"error" bson:"error"`
+	Output map[string]interface{} `json:"output" bson:"output"`
 }
 
 // NewTask - Creates a new task to be dispatched to a worker
@@ -42,7 +50,7 @@ func (client *Client) NewTask(service string) *Task {
 	taskId := bson.NewObjectId().Hex()
 	return &Task{
 		id:           taskId,
-		timeout:      30 * time.Minute,
+		timeout:      defaultTaskTimeout,
 		taskRequests: client.amqp.RegisterProducer("dips.worker.task." + service + ".request"),
 		taskResults:  client.amqp.RegisterResponseConsumer("dips.worker.task."+service+".result", taskId),
 	}
@@ -75,10 +83,11 @@ func (t *Task) Parameters(params map[string]interface{}) *Task {
 // Dispatches the task (and never blocks)
 func (t *Task) Dispatch() *DispatchedTask {
 	taskRequest := TaskRequest{
-		TaskID: t.id,
-		Job:    t.job,
-		Name:   t.name,
-		Params: t.params,
+		TaskID:  t.id,
+		Timeout: t.timeout,
+		Job:     t.job,
+		Name:    t.name,
+		Params:  t.params,
 	}
 
 	request, err := json.Marshal(&taskRequest)
@@ -87,7 +96,7 @@ func (t *Task) Dispatch() *DispatchedTask {
 	}
 
 	t.taskRequests <- amqp.Message{
-		Expiration: strconv.Itoa(int(t.timeout.Milliseconds())), // TODO: check if this is correct?
+		Expiration: strconv.Itoa(int(t.timeout.Milliseconds())),
 		Payload:    string(request),
 	}
 
@@ -96,25 +105,30 @@ func (t *Task) Dispatch() *DispatchedTask {
 	}
 }
 
-func (t *DispatchedTask) Await() error {
+func (t *DispatchedTask) Await() (*TaskResult, error) {
 	now := time.Now()
-outer:
 	for {
 		select {
 		case result := <-t.task.taskResults:
+			var tr TaskResult
+			err := json.Unmarshal([]byte(result.Payload), &tr)
+			if err != nil {
+
+			}
 			fmt.Println(result)
-			break outer
+			if tr.Error != nil {
+				return nil, errors.New(*tr.Error)
+			}
+			return &tr, nil
 
 		default:
 			if now.Add(t.task.timeout).Before(time.Now()) {
-				return errors.New("Timeout reached while executing task")
+				return nil, errors.New("Timeout reached while executing task")
 			}
 			time.Sleep(1 * time.Millisecond)
 			break
 		}
 	}
-
-	return nil
 }
 
 // TaskWorker - A worker service instance
@@ -122,7 +136,7 @@ type TaskWorker struct {
 	client       *Client
 	taskRequests (chan amqp.Message)
 	taskResults  (chan amqp.Message)
-	handler      func(*TaskContext) error
+	handler      func(*TaskContext) (map[string]interface{}, error)
 }
 
 // TaskContext - The TaskContext that is being sent to the task handler
@@ -147,7 +161,7 @@ func (client *Client) NewTaskWorker(service string) *TaskWorker {
 }
 
 // Handler - Sets the handler for this worker
-func (worker *TaskWorker) Handler(handler func(*TaskContext) error) *TaskWorker {
+func (worker *TaskWorker) Handler(handler func(*TaskContext) (map[string]interface{}, error)) *TaskWorker {
 	worker.handler = handler
 	return worker
 }
@@ -163,19 +177,33 @@ func (worker *TaskWorker) Run() {
 				panic("Invalid task request: " + err.Error())
 			}
 			if worker.handler != nil {
-				worker.handler(&TaskContext{
+				result, err := worker.handler(&TaskContext{
 					Client:  worker.client,
 					Worker:  worker,
 					Request: &taskRequest,
 				})
-			} else {
-				// TODO: handle case?
-			}
 
-			// send response for task
-			worker.taskResults <- amqp.Message{
-				CorrelationId: taskRequest.TaskID,
-				Payload:       "TODO",
+				response := TaskResult{
+					Output: result,
+				}
+				if err != nil {
+					e := err.Error()
+					response.Error = &e
+				}
+
+				payload, err := json.Marshal(response)
+				if err != nil {
+					panic("Unable to marshal task result: " + err.Error())
+				}
+
+				// send response for task
+				worker.taskResults <- amqp.Message{
+					Expiration:    strconv.Itoa(int(taskRequest.Timeout.Milliseconds())),
+					CorrelationId: taskRequest.TaskID,
+					Payload:       string(payload),
+				}
+			} else {
+				panic("handler not registered")
 			}
 		}
 	}()

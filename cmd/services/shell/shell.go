@@ -15,6 +15,7 @@ func main() {
 
 	cl.
 		NewTaskWorker("shell").
+		// TODO: task timeout??
 		Handler(shellHandler).
 		Run()
 
@@ -24,8 +25,10 @@ func main() {
 	<-signal
 }
 
-func shellHandler(task *client.TaskContext) error {
+func shellHandler(task *client.TaskContext) (map[string]interface{}, error) {
 	fmt.Printf("handling 'shell' task %s: %s\n", task.Request.Name, task.Request.Params)
 	time.Sleep(1 * time.Second)
-	return nil
+	variables := make(map[string]interface{})
+	variables["test"] = "test"
+	return nil, nil
 }
