@@ -3,12 +3,13 @@ package client
 import (
 	"encoding/json"
 
+	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/internal/persistence/database/model"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type Job struct {
-	jobQueue (chan string)
+	jobQueue (chan amqp.Message)
 	job      *model.Job
 	params   map[string]interface{}
 }
@@ -50,13 +51,15 @@ func (j *Job) Dispatch() {
 			panic("Invalid job request: " + err.Error())
 		}
 
-		j.jobQueue <- string(request)
+		j.jobQueue <- amqp.Message{
+			Payload: string(request),
+		}
 	}()
 }
 
 type JobWorker struct {
 	client   *Client
-	jobQueue (chan string)
+	jobQueue (chan amqp.Message)
 	handler  func(*JobContext) error
 }
 
@@ -84,7 +87,7 @@ func (w *JobWorker) Run() {
 	go func() {
 		for request := range w.jobQueue {
 			var jobRequest JobRequest
-			err := json.Unmarshal([]byte(request), &jobRequest)
+			err := json.Unmarshal([]byte(request.Payload), &jobRequest)
 			if err != nil {
 				panic("Invalid job request: " + err.Error())
 			}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/pkg/client"
 )
 
@@ -13,16 +12,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	cl.NewJobWorker().
-		Handler(jobHandler).
-		Run()
-
-	cl.NewJob().
-		Job(&model.Job{
-			Name: "test",
-		}).
-		Dispatch()
 
 	/*
 		cl.

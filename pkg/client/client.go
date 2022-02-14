@@ -5,8 +5,8 @@ import "github.com/ko1N/dips/internal/amqp"
 // Client - Dips client instance
 type Client struct {
 	amqp        *amqp.Client
-	statusQueue (chan string)
-	logQueue    (chan string)
+	statusQueue (chan amqp.Message)
+	logQueue    (chan amqp.Message)
 }
 
 // NewClient - Creates a new Dips client

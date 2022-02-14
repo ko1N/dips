@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -50,7 +51,13 @@ func main() {
 		Handler(handleJob).
 		Run()
 
-		// TEST
+	// TODO: temporary task worker
+	cl.
+		NewTaskWorker("shell").
+		Handler(shellHandler).
+		Run()
+
+	// TEST
 	// parse pipeline
 	content, err := ioutil.ReadFile(*pipelinePtr)
 	if err != nil {
@@ -93,7 +100,12 @@ func handleJob(job *client.JobContext) error {
 			job.Client.NewTask(task.Service).
 				Name(task.Name).
 				//Parameters(task.). // TODO: parameters
-				Dispatch()
+				Dispatch().
+				Await()
+			// TODO: wait for response (blocking) + timeout
+
+			// TODO: wait for result
+
 			return nil
 		})
 
@@ -108,5 +120,11 @@ func handleJob(job *client.JobContext) error {
 		tracker.Logger().Crit("unable to execute pipeline", "error", err)
 	}
 
+	return nil
+}
+
+func shellHandler(task *client.TaskContext) error {
+	fmt.Printf("handling 'shell' task %s: %s\n", task.Request.Name, task.Request.Params)
+	time.Sleep(1 * time.Second)
 	return nil
 }

@@ -1,7 +1,6 @@
 package amqp
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -10,12 +9,24 @@ import (
 
 const messageBuffer int = 1000
 
+type Message struct {
+	CorrelationId string
+	Payload       string
+}
+
+type Queue struct {
+	// Mapping from correlation id to go channel
+	// By default this maps an empty correlation id to the only channel
+	channels map[string]chan Message
+}
+
 // Client - Simple AMQP Client wrapper
 type Client struct {
-	server    string
-	producers map[string]chan string
-	consumers map[string]chan string
-	signal    chan struct{}
+	server              string
+	producers           map[string]*Queue
+	consumers           map[string]*Queue
+	registeredProducers map[string]bool
+	registeredConsumers map[string]bool
 }
 
 // Config - config entry describing a amqp config
@@ -26,9 +37,11 @@ type Config struct {
 // NewAMQP - will create a new AMQP Client object
 func NewAMQP(conf Config) *Client {
 	client := Client{
-		server:    conf.Host,
-		producers: make(map[string]chan string),
-		consumers: make(map[string]chan string),
+		server:              conf.Host,
+		producers:           make(map[string]*Queue),
+		consumers:           make(map[string]*Queue),
+		registeredProducers: make(map[string]bool),
+		registeredConsumers: make(map[string]bool),
 	}
 	client.run()
 	return &client
@@ -38,32 +51,61 @@ func NewAMQP(conf Config) *Client {
 // TODO: guarantee thread safety
 
 // RegisterProducer - creates a new producer channel and returns it
-func (c *Client) RegisterProducer(name string) chan string {
+func (c *Client) RegisterProducer(name string) chan Message {
 	if c.producers[name] != nil {
-		return c.producers[name]
+		return c.producers[name].channels[""]
 	}
-	chn := make(chan string, messageBuffer)
-	c.producers[name] = chn
+	chn := make(chan Message, messageBuffer)
+	c.producers[name] = &Queue{
+		channels: map[string]chan Message{"": chn},
+	}
 	return chn
 }
 
 // RegisterConsumer - creates a new consumer channel and returns it
-func (c *Client) RegisterConsumer(name string) chan string {
+func (c *Client) RegisterConsumer(name string) chan Message {
 	if c.consumers[name] != nil {
-		return c.consumers[name]
+		if c.consumers[name].channels[""] != nil {
+			return c.consumers[name].channels[""]
+		} else {
+			chn := make(chan Message, messageBuffer)
+			c.consumers[name].channels[""] = chn
+			return chn
+		}
 	}
-	chn := make(chan string, messageBuffer)
-	c.consumers[name] = chn
+	chn := make(chan Message, messageBuffer)
+	c.consumers[name] = &Queue{
+		channels: map[string]chan Message{"": chn},
+	}
+	return chn
+}
+
+// RegisterConsumer - creates a new consumer channel and returns it
+func (c *Client) RegisterResponseConsumer(name string, correlationId string) chan Message {
+	if c.consumers[name] != nil {
+		if c.consumers[name].channels[correlationId] != nil {
+			return c.consumers[name].channels[correlationId]
+		} else {
+			chn := make(chan Message, messageBuffer)
+			c.consumers[name].channels[correlationId] = chn
+			return chn
+		}
+	}
+	chn := make(chan Message, messageBuffer)
+	c.consumers[name] = &Queue{
+		channels: map[string]chan Message{correlationId: chn},
+	}
 	return chn
 }
 
 // Run - spawns a client in a new goroutine
 func (c *Client) run() {
 	go func() {
+	outer:
 		for {
 			time.Sleep(1 * time.Second)
 
-			fmt.Println("[AMQP] trying to connect to " + c.server)
+			//fmt.Println("[AMQP] trying to connect to " + c.server)
 			conn, err := amqp.Dial("amqp://" + c.server)
 			if err != nil {
 				log.Println("[AMQP] Failed to connect")
@@ -80,89 +122,119 @@ func (c *Client) run() {
 			}
 			defer ch.Close()
 
-			err = c.declareProducers(ch)
-			if err != nil {
-				log.Println("[AMQP] Failed to declare producer queues")
-				continue
+			// TODO: do not recreate producers/consumers
+
+		inner:
+			for {
+				select {
+				case err = <-notify:
+					// clear maps
+					c.registeredProducers = make(map[string]bool)
+					c.registeredConsumers = make(map[string]bool)
+					break inner
+
+				default:
+					// update consumers and producers
+					err = c.declareProducers(ch)
+					if err != nil {
+						log.Println("[AMQP] Failed to declare producer queues")
+						continue outer
+					}
+
+					err = c.declareConsumers(ch)
+					if err != nil {
+						log.Println("[AMQP] Failed to declare consumer queues")
+						continue outer
+					}
+
+					time.Sleep(1 * time.Millisecond)
+					break
+				}
 			}
-
-			err = c.declareConsumers(ch)
-			if err != nil {
-				log.Println("[AMQP] Failed to declare consumer queues")
-				continue
-			}
-
-			// TODO: lazily create producers/consumers here
-
-			err = <-notify
 		}
 	}()
 }
 
-func handleProducer(ch *amqp.Channel, q amqp.Queue, goch chan string) {
-	for body := range goch {
-		err := ch.Publish("",
+func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
+	for msg := range queue.channels[""] {
+		//fmt.Println("producer correlationId: " + msg.CorrelationId)
+		err := amqpChannel.Publish("",
 			q.Name,
 			false,
 			false,
 			amqp.Publishing{
-				ContentType: "application/json",
-				Body:        []byte(body),
+				ContentType:   "application/json",
+				Body:          []byte(msg.Payload),
+				CorrelationId: msg.CorrelationId,
 			})
 		if err != nil {
-			fmt.Printf("[AMQP] Error sending message\n")
-			goch <- body // re-queue failed message
-			return       // abort goroutine
+			//fmt.Printf("[AMQP] Error sending message, requeueing\n")
+			queue.channels[""] <- msg // re-queue failed message
+			return                    // abort goroutine
 		}
 	}
 }
 
 func (c *Client) declareProducers(ch *amqp.Channel) error {
-	for key := range c.producers {
-		fmt.Printf("[AMQP] Creating queue %s\n", key)
-		queue, err := ch.QueueDeclare(
-			key,
-			true,
-			false,
-			false,
-			false,
-			nil)
-		if err != nil {
-			return err
+	for name := range c.producers {
+		if !c.registeredProducers[name] {
+			//fmt.Printf("[AMQP] Creating producer queue %s\n", name)
+			queue, err := ch.QueueDeclare(
+				name,
+				true,
+				false,
+				false,
+				false,
+				nil)
+			if err != nil {
+				return err
+			}
+			c.registeredProducers[name] = true
+			go handleProducer(ch, queue, c.producers[name])
 		}
-		go handleProducer(ch, queue, c.producers[key])
 	}
 	return nil
 }
 
-func handleConsumer(queue <-chan amqp.Delivery, goch chan string) {
-	for msg := range queue {
-		goch <- string(msg.Body)
+func handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
+	for msg := range amqpDelivery {
+		//fmt.Println("consumer correlationId: " + msg.CorrelationId)
+		if queue.channels[msg.CorrelationId] != nil {
+			queue.channels[msg.CorrelationId] <- Message{
+				Payload: string(msg.Body),
+			}
+			msg.Ack(false)
+		} else {
+			msg.Nack(false, true)
+		}
 	}
 }
 
 func (c *Client) declareConsumers(ch *amqp.Channel) error {
-	for key := range c.consumers {
-		fmt.Printf("[AMQP] Creating queue %s\n", key)
-		_, err := ch.QueueDeclare(
-			key,
-			true,
-			false,
-			false,
-			false,
-			nil)
-		if err != nil {
-			return err
+	for name := range c.consumers {
+		if !c.registeredConsumers[name] {
+			//fmt.Printf("[AMQP] Creating consumer queue %s\n", name)
+			_, err := ch.QueueDeclare(
+				name,
+				true,
+				false,
+				false,
+				false,
+				nil)
+			if err != nil {
+				return err
+			}
+			queue, err := ch.Consume(
+				name,
+				"",
+				false, // autoAck
+				false,
+				false,
+				false,
+				nil)
+			c.registeredConsumers[name] = true
+			go handleConsumer(queue, c.consumers[name])
 		}
-		queue, err := ch.Consume(
-			key,
-			"",
-			true,
-			false,
-			false,
-			false,
-			nil)
-		go handleConsumer(queue, c.consumers[key])
 	}
 	return nil
 }

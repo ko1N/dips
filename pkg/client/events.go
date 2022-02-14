@@ -1,6 +1,10 @@
 package client
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ko1N/dips/internal/amqp"
+)
 
 // The event to be dispatched
 type Event struct {
@@ -81,7 +85,9 @@ func (e *Event) Dispatch() {
 				panic("Invalid status event: " + err.Error())
 			}
 
-			queue <- string(request)
+			queue <- amqp.Message{
+				Payload: string(request),
+			}
 		}
 
 		if e.message != nil {
@@ -92,7 +98,9 @@ func (e *Event) Dispatch() {
 				panic("Invalid message event: " + err.Error())
 			}
 
-			queue <- string(request)
+			queue <- amqp.Message{
+				Payload: string(request),
+			}
 		}
 
 		if e.variable != nil {
@@ -103,7 +111,9 @@ func (e *Event) Dispatch() {
 				panic("Invalid variable event: " + err.Error())
 			}
 
-			queue <- string(request)
+			queue <- amqp.Message{
+				Payload: string(request),
+			}
 		}
 	}()
 }
@@ -144,7 +154,7 @@ func (h *EventHandler) Run() {
 			queue := h.client.amqp.RegisterProducer("dips.event.status")
 			for request := range queue {
 				var statusEvent StatusEvent
-				err := json.Unmarshal([]byte(request), &statusEvent)
+				err := json.Unmarshal([]byte(request.Payload), &statusEvent)
 				if err != nil {
 					panic("Invalid status event: " + err.Error())
 				}
@@ -158,7 +168,7 @@ func (h *EventHandler) Run() {
 			queue := h.client.amqp.RegisterProducer("dips.event.message")
 			for request := range queue {
 				var messageEvent MessageEvent
-				err := json.Unmarshal([]byte(request), &messageEvent)
+				err := json.Unmarshal([]byte(request.Payload), &messageEvent)
 				if err != nil {
 					panic("Invalid log event: " + err.Error())
 				}
@@ -172,7 +182,7 @@ func (h *EventHandler) Run() {
 			queue := h.client.amqp.RegisterProducer("dips.event.variable")
 			for request := range queue {
 				var variableEvent VariableEvent
-				err := json.Unmarshal([]byte(request), &variableEvent)
+				err := json.Unmarshal([]byte(request.Payload), &variableEvent)
 				if err != nil {
 					panic("Invalid variable event: " + err.Error())
 				}
