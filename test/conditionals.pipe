@@ -23,5 +23,9 @@ stages:
     when: foo_result.rc == 5
 
   - service: shell
-    input: /usr/bin/bar
+    input: uname -a
     when: foo_result.rc != 0
+    register: uname_result
+
+  - service: shell
+    input: "echo {{ uname_result.stdout }}"

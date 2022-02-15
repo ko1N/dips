@@ -39,22 +39,20 @@ func (j *Job) Parameters(params map[string]interface{}) *Job {
 
 // Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
-	go func() {
-		jobRequest := JobRequest{
-			Job: j.job,
-			// TODO: params
-		}
-		jobRequest.Job.Id = bson.NewObjectId()
+	jobRequest := JobRequest{
+		Job: j.job,
+		// TODO: params
+	}
+	jobRequest.Job.Id = bson.NewObjectId()
 
-		request, err := json.Marshal(&jobRequest)
-		if err != nil {
-			panic("Invalid job request: " + err.Error())
-		}
+	request, err := json.Marshal(&jobRequest)
+	if err != nil {
+		panic("Invalid job request: " + err.Error())
+	}
 
-		j.jobQueue <- amqp.Message{
-			Payload: string(request),
-		}
-	}()
+	j.jobQueue <- amqp.Message{
+		Payload: string(request),
+	}
 }
 
 type JobWorker struct {

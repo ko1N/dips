@@ -98,9 +98,9 @@ func shellHandler(task *client.TaskContext) (map[string]interface{}, error) {
 	//	return nil, err
 	//}
 
-	variables := make(map[string]interface{})
-	variables["rc"] = exc.ProcessState.ExitCode()
-	variables["stdout"] = outBuf.String()
-	variables["stderr"] = errBuf.String()
-	return variables, nil
+	return map[string]interface{}{
+		"rc":     exc.ProcessState.ExitCode(),
+		"stdout": outBuf.String(),
+		"stderr": errBuf.String(),
+	}, nil
 }

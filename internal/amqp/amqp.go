@@ -166,8 +166,8 @@ func (c *Client) run() {
 	}()
 }
 
-func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
-	for msg := range queue.channels[""] {
+func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, chn chan Message) {
+	for msg := range chn {
 		//fmt.Println("producer correlationId: " + msg.CorrelationId)
 		err := amqpChannel.Publish("",
 			q.Name,
@@ -181,8 +181,8 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
 			})
 		if err != nil {
 			//fmt.Printf("[AMQP] Error sending message, requeueing\n")
-			queue.channels[""] <- msg // re-queue failed message
-			return                    // abort goroutine
+			chn <- msg // re-queue failed message
+			return     // abort goroutine
 		}
 	}
 }
@@ -205,17 +205,22 @@ func (c *Client) declareProducers(ch *amqp.Channel) error {
 				return err
 			}
 			c.registeredProducers[name] = true
-			go handleProducer(ch, queue, c.producers[name])
+			chn := c.producers[name].channels[""]
+			go handleProducer(ch, queue, chn)
 		}
 	}
 	return nil
 }
 
-func handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
+func (c *Client) handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
 	for msg := range amqpDelivery {
 		//fmt.Println("consumer correlationId: " + msg.CorrelationId)
-		if queue.channels[msg.CorrelationId] != nil {
-			queue.channels[msg.CorrelationId] <- Message{
+		c.lock.Lock()
+		chn := queue.channels[msg.CorrelationId]
+		c.lock.Unlock()
+
+		if chn != nil {
+			chn <- Message{
 				Payload: string(msg.Body),
 			}
 			msg.Ack(false)
@@ -251,7 +256,7 @@ func (c *Client) declareConsumers(ch *amqp.Channel) error {
 				false,
 				nil)
 			c.registeredConsumers[name] = true
-			go handleConsumer(queue, c.consumers[name])
+			go c.handleConsumer(queue, c.consumers[name])
 		}
 	}
 	return nil

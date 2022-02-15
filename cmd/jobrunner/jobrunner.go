@@ -3,12 +3,10 @@ package main
 import (
 	"errors"
 	"flag"
-	"io/ioutil"
 	"time"
 
 	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/internal/amqp"
-	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/pkg/client"
 	"github.com/ko1N/dips/pkg/pipeline"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
@@ -22,9 +20,6 @@ type config struct {
 }
 
 func main() {
-	pipelinePtr := flag.String("pipeline", "", "the pipeline to execute")
-	flag.Parse()
-
 	// create global logger for this instance
 	srvlog := log.New("cmd", "worker")
 
@@ -45,24 +40,10 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: configure concurrency
+	// TODO: configure concurrency, timeouts, etc
 	cl.NewJobWorker().
 		Handler(handleJob).
 		Run()
-
-	// execute pipeline
-	content, err := ioutil.ReadFile(*pipelinePtr)
-	if err != nil {
-		srvlog.Crit("unable to open pipeline script file", "error", err)
-	}
-	cl.NewJob().
-		Job(&model.Job{
-			Name: "test",
-			Pipeline: &model.Pipeline{
-				Script: content,
-			},
-		}).
-		Dispatch()
 
 	signal := make(chan struct{})
 	<-signal
