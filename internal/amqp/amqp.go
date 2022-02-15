@@ -25,7 +25,7 @@ type Queue struct {
 // Client - Simple AMQP Client wrapper
 type Client struct {
 	server              string
-	lock                sync.RWMutex
+	lock                sync.Mutex
 	producers           map[string]*Queue
 	consumers           map[string]*Queue
 	registeredProducers map[string]bool
@@ -188,8 +188,8 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
 }
 
 func (c *Client) declareProducers(ch *amqp.Channel) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	for name := range c.producers {
 		if !c.registeredProducers[name] {
@@ -226,8 +226,8 @@ func handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
 }
 
 func (c *Client) declareConsumers(ch *amqp.Channel) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	for name := range c.consumers {
 		if !c.registeredConsumers[name] {
