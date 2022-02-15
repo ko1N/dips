@@ -16,47 +16,14 @@ type ExecutionContext struct {
 	JobID       string
 	Pipeline    *Pipeline
 	Tracker     tracking.JobTracker
-	Variables   map[string]tengo.Object
+	variables   map[string]interface{}
 	taskHandler func(*Task, map[string]string) (*ExecutionResult, error)
 }
 
 type ExecutionResult struct {
-	Error  *string                `json:"error" bson:"error"`
-	Output map[string]interface{} `json:"output" bson:"output"`
-}
-
-func (r *ExecutionResult) ToScriptObject() tengo.Object {
-	if r.Error != nil {
-		return &tengo.Map{
-			Value: map[string]tengo.Object{
-				"failed": tengo.TrueValue,
-				"error":  &tengo.String{Value: *r.Error},
-				// TODO: key value mapping
-			}}
-	}
-
-	result := &tengo.Map{
-		Value: map[string]tengo.Object{
-			"failed": tengo.FalseValue,
-			"error":  nil,
-			// TODO: key value mapping
-		}}
-
-	for key, value := range r.Output {
-
-		switch v := value.(type) {
-		case string:
-			result.Value[key] = &tengo.String{Value: v}
-		case int:
-			result.Value[key] = &tengo.Int{Value: int64(v)}
-		case float64:
-			result.Value[key] = &tengo.Float{Value: float64(v)}
-		default:
-			fmt.Println("unknown type")
-		}
-	}
-
-	return result
+	Success bool                   `json:"success" bson:"success"`
+	Error   *string                `json:"error" bson:"error"`
+	Output  map[string]interface{} `json:"output" bson:"output"`
 }
 
 func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) *ExecutionContext {
@@ -64,8 +31,13 @@ func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobT
 		JobID:     jobID,
 		Pipeline:  pipeline,
 		Tracker:   tracker,
-		Variables: make(map[string]tengo.Object),
+		variables: make(map[string]interface{}),
 	}
+}
+
+func (e *ExecutionContext) Variables(variables map[string]interface{}) *ExecutionContext {
+	e.variables = variables
+	return e
 }
 
 // Handler - Sets the handler for this worker
@@ -98,7 +70,7 @@ func (e *ExecutionContext) Run() error {
 			// TODO: put this logic in seperate objects
 			// check "when" condition
 			if task.When.Script != "" {
-				res, err := task.When.Evaluate(e.Variables)
+				res, err := task.When.Evaluate(e.variables)
 				if err != nil {
 					e.Tracker.Error("unable to compile expression", err)
 					return err
@@ -115,15 +87,18 @@ func (e *ExecutionContext) Run() error {
 				// TODO: put this logic in seperate objects
 				input := make(map[string]string)
 				for key, value := range task.Input {
+					var err error
 					input[key] = string(expression.ReplaceAllFunc([]byte(value), func(m []byte) []byte {
 						t := strings.TrimSpace(string(m[2 : len(m)-2]))
-						v, err := (&Expression{Script: string(t)}).Evaluate(e.Variables)
-						if err != nil {
-							// TODO:
-							panic(err)
-						}
+						var v string
+						v, err = (&Expression{Script: string(t)}).Evaluate(e.variables)
 						return []byte(v)
 					}))
+					if err != nil {
+						e.Tracker.Error("error parsing task input", err)
+						fmt.Printf("%+v\n", e.variables)
+						return err
+					}
 				}
 
 				result, err := (e.taskHandler)(&task, input)
@@ -140,7 +115,12 @@ func (e *ExecutionContext) Run() error {
 
 				// convert result into tengo objects and store it
 				if task.Register != "" {
-					e.Variables[task.Register] = result.ToScriptObject()
+					v, err := tengo.FromInterface(result)
+					if err != nil {
+						e.variables[task.Register] = &tengo.ObjectPtr{}
+					} else {
+						e.variables[task.Register] = v
+					}
 				}
 			}
 

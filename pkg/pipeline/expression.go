@@ -12,7 +12,7 @@ type Expression struct {
 }
 
 // Evaluate - Evaluates the expression to a bool
-func (e *Expression) Evaluate(variables map[string]tengo.Object) (string, error) {
+func (e *Expression) Evaluate(variables map[string]interface{}) (string, error) {
 	// TODO: handle errors
 	src := `out := ` + e.Script
 	script := tengo.NewScript([]byte(src))

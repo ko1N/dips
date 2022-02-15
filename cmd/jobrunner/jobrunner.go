@@ -5,7 +5,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/d5/tengo/v2"
 	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/pkg/client"
 	"github.com/ko1N/dips/pkg/pipeline"
@@ -68,6 +67,7 @@ func handleJob(job *client.JobContext) error {
 	// execute pipeline on engine
 	exec := pipeline.
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
+		Variables(job.Request.Variables).
 		TaskHandler(func(task *pipeline.Task, input map[string]string) (*pipeline.ExecutionResult, error) {
 			result, err := job.Client.
 				NewTask(task.Service).
@@ -80,15 +80,11 @@ func handleJob(job *client.JobContext) error {
 				return nil, err
 			}
 			return &pipeline.ExecutionResult{
-				Error:  result.Error,
-				Output: result.Output,
+				Success: result.Error == nil,
+				Error:   result.Error,
+				Output:  result.Output,
 			}, nil
 		})
-
-	// setup parameters
-	for paramName, paramValue := range job.Request.Params {
-		exec.Variables[paramName] = &tengo.String{Value: paramValue.(string)}
-	}
 
 	// run execution
 	err = exec.Run()

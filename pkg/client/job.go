@@ -9,14 +9,14 @@ import (
 )
 
 type Job struct {
-	jobQueue (chan amqp.Message)
-	job      *model.Job
-	params   map[string]interface{}
+	jobQueue  (chan amqp.Message)
+	job       *model.Job
+	variables map[string]interface{}
 }
 
 type JobRequest struct {
-	Job    *model.Job             `json:"job"`
-	Params map[string]interface{} `json:"params"`
+	Job       *model.Job             `json:"job"`
+	Variables map[string]interface{} `json:"variables"`
 }
 
 func (c *Client) NewJob() *Job {
@@ -31,17 +31,33 @@ func (j *Job) Job(job *model.Job) *Job {
 	return j
 }
 
+func (j *Job) Name(name string) *Job {
+	if j.job == nil {
+		j.job = &model.Job{}
+	}
+	j.job.Name = name
+	return j
+}
+
+func (j *Job) Pipeline(script []byte) *Job {
+	if j.job.Pipeline == nil {
+		j.job.Pipeline = &model.Pipeline{}
+	}
+	j.job.Pipeline.Script = script
+	return j
+}
+
 // Parameters - Sets the input parameters of the job
-func (j *Job) Parameters(params map[string]interface{}) *Job {
-	j.params = params
+func (j *Job) Variables(variables map[string]interface{}) *Job {
+	j.variables = variables
 	return j
 }
 
 // Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
 	jobRequest := JobRequest{
-		Job: j.job,
-		// TODO: params
+		Job:       j.job,
+		Variables: j.variables,
 	}
 	jobRequest.Job.Id = bson.NewObjectId()
 

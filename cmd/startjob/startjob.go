@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 
 	"github.com/ko1N/dips/internal/amqp"
-	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/pkg/client"
 
 	"github.com/BurntSushi/toml"
@@ -41,22 +40,21 @@ func main() {
 	}
 
 	// execute pipeline
-	content, err := ioutil.ReadFile(*pipelinePtr)
+	contents, err := ioutil.ReadFile(*pipelinePtr)
 	if err != nil {
 		srvlog.Crit("unable to open pipeline script file", "error", err)
 	}
-	for i := 1; i < 10000; i++ {
-		go func() {
-			cl.NewJob().
-				Job(&model.Job{
-					Name: "test",
-					Pipeline: &model.Pipeline{
-						Script: content,
-					},
-				}).
-				Dispatch()
-		}()
-	}
+	//for i := 1; i < 10000; i++ {
+	go func() {
+		cl.NewJob().
+			Name("test").
+			Pipeline(contents).
+			Variables(map[string]interface{}{
+				"filename": "minio://minio:miniominio@172.17.0.1:9000/test/test.mp4",
+			}).
+			Dispatch()
+	}()
+	//}
 
 	signal := make(chan struct{})
 	<-signal

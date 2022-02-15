@@ -1,16 +1,9 @@
 ---
 name: transcoding test
+
 stages:
-- stage: testing install and ffmpeg
+- stage: testing conditional execution
   tasks:
 
-  - name: install ffmpeg
-    shell: apk add wget ffmpeg
-
-  - name: download a video
-    wget: https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4
-
-  - name: ffmpeg transcode video
-    ffmpeg: -i Big_Buck_Bunny_1080_10s_30MB.mp4 -f null -
-    headers:
-      cmdline: -i Big_Buck_Bunny_1080_10s_30MB.mp4 -f null -
+  - service: shell
+    input: "echo {{ filename }}"
