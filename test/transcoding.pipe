@@ -12,3 +12,5 @@ stages:
 
   - name: ffmpeg transcode video
     ffmpeg: -i Big_Buck_Bunny_1080_10s_30MB.mp4 -f null -
+    headers:
+      cmdline: -i Big_Buck_Bunny_1080_10s_30MB.mp4 -f null -

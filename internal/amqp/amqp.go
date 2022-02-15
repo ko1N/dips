@@ -2,6 +2,7 @@ package amqp
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -24,6 +25,7 @@ type Queue struct {
 // Client - Simple AMQP Client wrapper
 type Client struct {
 	server              string
+	lock                sync.RWMutex
 	producers           map[string]*Queue
 	consumers           map[string]*Queue
 	registeredProducers map[string]bool
@@ -52,6 +54,9 @@ func NewAMQP(conf Config) *Client {
 
 // RegisterProducer - creates a new producer channel and returns it
 func (c *Client) RegisterProducer(name string) chan Message {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.producers[name] != nil {
 		return c.producers[name].channels[""]
 	}
@@ -64,6 +69,9 @@ func (c *Client) RegisterProducer(name string) chan Message {
 
 // RegisterConsumer - creates a new consumer channel and returns it
 func (c *Client) RegisterConsumer(name string) chan Message {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.consumers[name] != nil {
 		if c.consumers[name].channels[""] != nil {
 			return c.consumers[name].channels[""]
@@ -82,6 +90,9 @@ func (c *Client) RegisterConsumer(name string) chan Message {
 
 // RegisterConsumer - creates a new consumer channel and returns it
 func (c *Client) RegisterResponseConsumer(name string, correlationId string) chan Message {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.consumers[name] != nil {
 		if c.consumers[name].channels[correlationId] != nil {
 			return c.consumers[name].channels[correlationId]
@@ -127,8 +138,10 @@ func (c *Client) run() {
 				select {
 				case err = <-notify:
 					// clear maps
+					c.lock.Lock()
 					c.registeredProducers = make(map[string]bool)
 					c.registeredConsumers = make(map[string]bool)
+					c.lock.Unlock()
 					break inner
 
 				default:
@@ -175,6 +188,9 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, queue *Queue) {
 }
 
 func (c *Client) declareProducers(ch *amqp.Channel) error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	for name := range c.producers {
 		if !c.registeredProducers[name] {
 			//fmt.Printf("[AMQP] Creating producer queue %s\n", name)
@@ -210,6 +226,9 @@ func handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
 }
 
 func (c *Client) declareConsumers(ch *amqp.Channel) error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	for name := range c.consumers {
 		if !c.registeredConsumers[name] {
 			//fmt.Printf("[AMQP] Creating consumer queue %s\n", name)
