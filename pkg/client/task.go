@@ -15,6 +15,8 @@ const defaultTaskTimeout = 3 * time.Minute
 
 // Task - A task instance to be dispatched to a worker
 type Task struct {
+	client       *Client
+	service      string
 	id           string
 	timeout      time.Duration
 	taskRequests (chan amqp.Message)
@@ -48,6 +50,8 @@ func (client *Client) NewTask(service string) *Task {
 	// TODO: sanitize name
 	taskId := bson.NewObjectId().Hex()
 	return &Task{
+		client:       client,
+		service:      service,
 		id:           taskId,
 		timeout:      defaultTaskTimeout,
 		taskRequests: client.amqp.RegisterProducer("dips.worker.task." + service + ".request"),
@@ -105,6 +109,9 @@ func (t *Task) Dispatch() *DispatchedTask {
 }
 
 func (t *DispatchedTask) Await() (*TaskResult, error) {
+	// release channel after this function returns
+	defer t.Close()
+
 	now := time.Now()
 	for {
 		select {
@@ -129,9 +136,14 @@ func (t *DispatchedTask) Await() (*TaskResult, error) {
 	}
 }
 
+func (t *DispatchedTask) Close() {
+	t.task.client.amqp.CloseResponseConsumer("dips.worker.task."+t.task.service+".result", t.task.id)
+}
+
 // TaskWorker - A worker service instance
 type TaskWorker struct {
 	client       *Client
+	concurrency  int
 	taskRequests (chan amqp.Message)
 	taskResults  (chan amqp.Message)
 	handler      func(*TaskContext) (map[string]interface{}, error)
@@ -158,6 +170,11 @@ func (client *Client) NewTaskWorker(service string) *TaskWorker {
 	}
 }
 
+func (worker *TaskWorker) Concurrency(threads int) *TaskWorker {
+	worker.concurrency = threads
+	return worker
+}
+
 // Handler - Sets the handler for this worker
 func (worker *TaskWorker) Handler(handler func(*TaskContext) (map[string]interface{}, error)) *TaskWorker {
 	worker.handler = handler
@@ -167,42 +184,48 @@ func (worker *TaskWorker) Handler(handler func(*TaskContext) (map[string]interfa
 // Run - Starts a new goroutine for this worker
 func (worker *TaskWorker) Run() {
 	// TODO: graceful shutdown
-	go func() {
-		for request := range worker.taskRequests {
-			var taskRequest TaskRequest
-			err := json.Unmarshal([]byte(request.Payload), &taskRequest)
-			if err != nil {
-				panic("Invalid task request: " + err.Error())
-			}
-			if worker.handler != nil {
-				result, err := worker.handler(&TaskContext{
-					Client:  worker.client,
-					Worker:  worker,
-					Request: &taskRequest,
-				})
-
-				response := TaskResult{
-					Output: result,
-				}
+	concurrency := worker.concurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			for request := range worker.taskRequests {
+				var taskRequest TaskRequest
+				err := json.Unmarshal([]byte(request.Payload), &taskRequest)
 				if err != nil {
-					e := err.Error()
-					response.Error = &e
+					panic("Invalid task request: " + err.Error())
 				}
+				if worker.handler != nil {
+					result, err := worker.handler(&TaskContext{
+						Client:  worker.client,
+						Worker:  worker,
+						Request: &taskRequest,
+					})
 
-				payload, err := json.Marshal(response)
-				if err != nil {
-					panic("Unable to marshal task result: " + err.Error())
-				}
+					response := TaskResult{
+						Output: result,
+					}
+					if err != nil {
+						e := err.Error()
+						response.Error = &e
+					}
 
-				// send response for task
-				worker.taskResults <- amqp.Message{
-					Expiration:    strconv.Itoa(int(taskRequest.Timeout.Milliseconds())),
-					CorrelationId: taskRequest.TaskID,
-					Payload:       string(payload),
+					payload, err := json.Marshal(response)
+					if err != nil {
+						panic("Unable to marshal task result: " + err.Error())
+					}
+
+					// send response for task
+					worker.taskResults <- amqp.Message{
+						Expiration:    strconv.Itoa(int(taskRequest.Timeout.Milliseconds())),
+						CorrelationId: taskRequest.TaskID,
+						Payload:       string(payload),
+					}
+				} else {
+					panic("handler not registered")
 				}
-			} else {
-				panic("handler not registered")
 			}
-		}
-	}()
+		}()
+	}
 }

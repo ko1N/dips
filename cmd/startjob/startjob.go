@@ -44,17 +44,17 @@ func main() {
 	if err != nil {
 		srvlog.Crit("unable to open pipeline script file", "error", err)
 	}
-	//for i := 1; i < 10000; i++ {
-	go func() {
-		cl.NewJob().
-			Name("test").
-			Pipeline(contents).
-			Variables(map[string]interface{}{
-				"filename": "minio://minio:miniominio@172.17.0.1:9000/test/test.mp4",
-			}).
-			Dispatch()
-	}()
-	//}
+	for i := 1; i < 100000; i++ {
+		go func() {
+			cl.NewJob().
+				Name("test").
+				Pipeline(contents).
+				Variables(map[string]interface{}{
+					"filename": "minio://minio:miniominio@172.17.0.1:9000/test/test.mp4",
+				}).
+				Dispatch()
+		}()
+	}
 
 	signal := make(chan struct{})
 	<-signal

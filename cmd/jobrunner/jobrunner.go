@@ -41,6 +41,7 @@ func main() {
 
 	// TODO: configure concurrency, timeouts, etc
 	cl.NewJobWorker().
+		Concurrency(1000).
 		Handler(handleJob).
 		Run()
 
@@ -69,21 +70,29 @@ func handleJob(job *client.JobContext) error {
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
 		Variables(job.Request.Variables).
 		TaskHandler(func(task *pipeline.Task, input map[string]string) (*pipeline.ExecutionResult, error) {
-			result, err := job.Client.
-				NewTask(task.Service).
-				Name(task.Name).
-				Timeout(10 * time.Second).
-				Parameters(input).
-				Dispatch().
-				Await()
-			if err != nil {
-				return nil, err
+			retries := 3
+			for {
+				result, err := job.Client.
+					NewTask(task.Service).
+					Name(task.Name).
+					Timeout(10 * time.Second).
+					Parameters(input).
+					Dispatch().
+					Await()
+				if err != nil {
+					if retries > 0 {
+						retries--
+						continue
+					} else {
+						return nil, err
+					}
+				}
+				return &pipeline.ExecutionResult{
+					Success: result.Error == nil,
+					Error:   result.Error,
+					Output:  result.Output,
+				}, nil
 			}
-			return &pipeline.ExecutionResult{
-				Success: result.Error == nil,
-				Error:   result.Error,
-				Output:  result.Output,
-			}, nil
 		})
 
 	// run execution

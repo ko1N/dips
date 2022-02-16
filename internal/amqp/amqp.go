@@ -1,6 +1,7 @@
 package amqp
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -109,6 +110,15 @@ func (c *Client) RegisterResponseConsumer(name string, correlationId string) cha
 	return chn
 }
 
+func (c *Client) CloseResponseConsumer(name string, correlationId string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	// close channel
+	close(c.consumers[name].channels[correlationId])
+	delete(c.consumers[name].channels, correlationId)
+}
+
 // Run - spawns a client in a new goroutine
 func (c *Client) run() {
 	go func() {
@@ -116,7 +126,7 @@ func (c *Client) run() {
 		for {
 			time.Sleep(1 * time.Second)
 
-			//fmt.Println("[AMQP] trying to connect to " + c.server)
+			fmt.Println("[AMQP] trying to connect to " + c.server)
 			conn, err := amqp.Dial("amqp://" + c.server)
 			if err != nil {
 				log.Println("[AMQP] Failed to connect")
@@ -168,7 +178,6 @@ func (c *Client) run() {
 
 func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, chn chan Message) {
 	for msg := range chn {
-		//fmt.Println("producer correlationId: " + msg.CorrelationId)
 		err := amqpChannel.Publish("",
 			q.Name,
 			false,
@@ -180,7 +189,7 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, chn chan Message) {
 				Expiration:    msg.Expiration,
 			})
 		if err != nil {
-			//fmt.Printf("[AMQP] Error sending message, requeueing\n")
+			fmt.Printf("[AMQP] Error sending message, requeueing\n")
 			chn <- msg // re-queue failed message
 			return     // abort goroutine
 		}
@@ -193,7 +202,7 @@ func (c *Client) declareProducers(ch *amqp.Channel) error {
 
 	for name := range c.producers {
 		if !c.registeredProducers[name] {
-			//fmt.Printf("[AMQP] Creating producer queue %s\n", name)
+			fmt.Printf("[AMQP] Creating producer queue %s\n", name)
 			queue, err := ch.QueueDeclare(
 				name,
 				true,
@@ -214,7 +223,6 @@ func (c *Client) declareProducers(ch *amqp.Channel) error {
 
 func (c *Client) handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
 	for msg := range amqpDelivery {
-		//fmt.Println("consumer correlationId: " + msg.CorrelationId)
 		c.lock.Lock()
 		chn := queue.channels[msg.CorrelationId]
 		c.lock.Unlock()
@@ -236,7 +244,7 @@ func (c *Client) declareConsumers(ch *amqp.Channel) error {
 
 	for name := range c.consumers {
 		if !c.registeredConsumers[name] {
-			//fmt.Printf("[AMQP] Creating consumer queue %s\n", name)
+			fmt.Printf("[AMQP] Creating consumer queue %s\n", name)
 			_, err := ch.QueueDeclare(
 				name,
 				true,

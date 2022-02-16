@@ -72,9 +72,10 @@ func (j *Job) Dispatch() {
 }
 
 type JobWorker struct {
-	client   *Client
-	jobQueue (chan amqp.Message)
-	handler  func(*JobContext) error
+	client      *Client
+	concurrency int
+	jobQueue    (chan amqp.Message)
+	handler     func(*JobContext) error
 }
 
 type JobContext struct {
@@ -90,6 +91,11 @@ func (c *Client) NewJobWorker() *JobWorker {
 	}
 }
 
+func (w *JobWorker) Concurrency(threads int) *JobWorker {
+	w.concurrency = threads
+	return w
+}
+
 func (w *JobWorker) Handler(handler func(*JobContext) error) *JobWorker {
 	w.handler = handler
 	return w
@@ -98,22 +104,28 @@ func (w *JobWorker) Handler(handler func(*JobContext) error) *JobWorker {
 // Run - Starts a new goroutine for this worker
 func (w *JobWorker) Run() {
 	// TODO: graceful shutdown
-	go func() {
-		for request := range w.jobQueue {
-			var jobRequest JobRequest
-			err := json.Unmarshal([]byte(request.Payload), &jobRequest)
-			if err != nil {
-				panic("Invalid job request: " + err.Error())
+	concurrency := w.concurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			for request := range w.jobQueue {
+				var jobRequest JobRequest
+				err := json.Unmarshal([]byte(request.Payload), &jobRequest)
+				if err != nil {
+					panic("Invalid job request: " + err.Error())
+				}
+				if w.handler != nil {
+					w.handler(&JobContext{
+						Client:  w.client,
+						Worker:  w,
+						Request: &jobRequest,
+					})
+				} else {
+					// TODO: handle case?
+				}
 			}
-			if w.handler != nil {
-				w.handler(&JobContext{
-					Client:  w.client,
-					Worker:  w,
-					Request: &jobRequest,
-				})
-			} else {
-				// TODO: handle case?
-			}
-		}
-	}()
+		}()
+	}
 }
