@@ -136,13 +136,6 @@ func (c *Client) run() {
 
 			notify := conn.NotifyClose(make(chan *amqp.Error, 10))
 
-			ch, err := conn.Channel()
-			if err != nil {
-				log.Println("[AMQP] Failed to open channel")
-				continue
-			}
-			defer ch.Close()
-
 		inner:
 			for {
 				select {
@@ -156,13 +149,13 @@ func (c *Client) run() {
 
 				default:
 					// update consumers and producers
-					err = c.declareProducers(ch)
+					err = c.declareProducers(conn)
 					if err != nil {
 						log.Println("[AMQP] Failed to declare producer queues: " + err.Error())
 						continue outer
 					}
 
-					err = c.declareConsumers(ch)
+					err = c.declareConsumers(conn)
 					if err != nil {
 						log.Println("[AMQP] Failed to declare consumer queues: " + err.Error())
 						continue outer
@@ -176,9 +169,11 @@ func (c *Client) run() {
 	}()
 }
 
-func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, chn chan Message) {
+func handleProducer(mqchn *amqp.Channel, q amqp.Queue, chn chan Message) {
+	defer mqchn.Close()
+
 	for msg := range chn {
-		err := amqpChannel.Publish("",
+		err := mqchn.Publish("",
 			q.Name,
 			false,
 			false,
@@ -196,14 +191,21 @@ func handleProducer(amqpChannel *amqp.Channel, q amqp.Queue, chn chan Message) {
 	}
 }
 
-func (c *Client) declareProducers(ch *amqp.Channel) error {
+func (c *Client) declareProducers(conn *amqp.Connection) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	for name := range c.producers {
 		if !c.registeredProducers[name] {
+			fmt.Printf("[AMQP] Creating producer channel %s\n", name)
+			mqchn, err := conn.Channel()
+			if err != nil {
+				log.Println("[AMQP] Failed to open producer channel" + err.Error())
+				return err
+			}
+
 			fmt.Printf("[AMQP] Creating producer queue %s\n", name)
-			queue, err := ch.QueueDeclare(
+			queue, err := mqchn.QueueDeclare(
 				name,
 				true,
 				false,
@@ -211,17 +213,20 @@ func (c *Client) declareProducers(ch *amqp.Channel) error {
 				false,
 				nil)
 			if err != nil {
+				mqchn.Close()
 				return err
 			}
 			c.registeredProducers[name] = true
 			chn := c.producers[name].channels[""]
-			go handleProducer(ch, queue, chn)
+			go handleProducer(mqchn, queue, chn)
 		}
 	}
 	return nil
 }
 
-func (c *Client) handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue) {
+func (c *Client) handleConsumer(mqchn *amqp.Channel, amqpDelivery <-chan amqp.Delivery, queue *Queue) {
+	defer mqchn.Close()
+
 	for msg := range amqpDelivery {
 		c.lock.Lock()
 		chn := queue.channels[msg.CorrelationId]
@@ -238,14 +243,21 @@ func (c *Client) handleConsumer(amqpDelivery <-chan amqp.Delivery, queue *Queue)
 	}
 }
 
-func (c *Client) declareConsumers(ch *amqp.Channel) error {
+func (c *Client) declareConsumers(conn *amqp.Connection) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	for name := range c.consumers {
 		if !c.registeredConsumers[name] {
+			fmt.Printf("[AMQP] Creating consumer channel %s\n", name)
+			mqchn, err := conn.Channel()
+			if err != nil {
+				log.Println("[AMQP] Failed to open consumer channel" + err.Error())
+				return err
+			}
+
 			fmt.Printf("[AMQP] Creating consumer queue %s\n", name)
-			_, err := ch.QueueDeclare(
+			_, err = mqchn.QueueDeclare(
 				name,
 				true,
 				false,
@@ -253,9 +265,10 @@ func (c *Client) declareConsumers(ch *amqp.Channel) error {
 				false,
 				nil)
 			if err != nil {
+				mqchn.Close()
 				return err
 			}
-			queue, err := ch.Consume(
+			queue, err := mqchn.Consume(
 				name,
 				"",
 				false, // autoAck
@@ -263,8 +276,12 @@ func (c *Client) declareConsumers(ch *amqp.Channel) error {
 				false,
 				false,
 				nil)
+			if err != nil {
+				mqchn.Close()
+				return err
+			}
 			c.registeredConsumers[name] = true
-			go c.handleConsumer(queue, c.consumers[name])
+			go c.handleConsumer(mqchn, queue, c.consumers[name])
 		}
 	}
 	return nil
