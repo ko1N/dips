@@ -2,9 +2,9 @@ package manager
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/internal/persistence/database/crud"
 	"github.com/ko1N/dips/internal/persistence/messages"
+	"github.com/ko1N/dips/pkg/client"
 	"github.com/zebresel-com/mongodm"
 )
 
@@ -15,11 +15,6 @@ var pipelines crud.PipelineWrapper
 var jobs crud.JobWrapper
 
 var messageHandler messages.MessageHandler
-
-// amqp channels
-var sendPipelineExecute chan string
-var recvJobStatus chan string
-var recvJobMessage chan string
 
 // SuccessResponse - reponse for a successful operation
 type SuccessResponse struct {
@@ -35,7 +30,7 @@ type FailureResponse struct {
 // ManagerAPIConfig - config required to run a manager
 type ManagerAPIConfig struct {
 	Gin            *gin.Engine
-	AMQP           amqp.Config
+	Dips           *client.Client
 	MongoDB        *mongodm.Connection
 	MessageHandler messages.MessageHandler
 }
@@ -48,20 +43,10 @@ func CreateManagerAPI(conf ManagerAPIConfig) error {
 
 	messageHandler = conf.MessageHandler
 
-	// setup amqp
-	client := amqp.NewAMQP(conf.AMQP)
-	sendPipelineExecute = client.RegisterProducer("pipeline_execute")
-	recvJobStatus = client.RegisterConsumer("job_status")
-	recvJobMessage = client.RegisterConsumer("job_message")
-
-	//go handleJobStatus()
-	//go handleJobMessage()
-
-	/*
-		client.RegisterConsumerFunc("pipeline_status", func(msg []byte) {
-			// handle message
-		})
-	*/
+	conf.Dips.NewEventHandler().
+		HandleMessage(handleMessage(conf.Dips)).
+		HandleStatus(handleStatus(conf.Dips)).
+		Run()
 
 	// setup rest routes
 	r := conf.Gin
@@ -72,7 +57,7 @@ func CreateManagerAPI(conf ManagerAPIConfig) error {
 	r.PATCH("/manager/pipeline/:pipeline_id", PipelineUpdate)
 	r.DELETE("/manager/pipeline/:pipeline_id", PipelineDelete)
 
-	r.POST("/manager/pipeline/execute/:pipeline_id", PipelineExecute)
+	r.POST("/manager/pipeline/execute/:pipeline_id", PipelineExecute(conf.Dips))
 
 	r.GET("/manager/job/all", JobList) // TODO: add more queries, running, finished, etc
 	r.GET("/manager/job/details/:job_id", JobDetails)

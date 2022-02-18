@@ -59,7 +59,9 @@ func (j *Job) Dispatch() {
 		Job:       j.job,
 		Variables: j.variables,
 	}
-	jobRequest.Job.Id = bson.NewObjectId()
+	if jobRequest.Job.Id == "" {
+		jobRequest.Job.Id = bson.NewObjectId()
+	}
 
 	request, err := json.Marshal(&jobRequest)
 	if err != nil {

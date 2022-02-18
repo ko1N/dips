@@ -50,10 +50,9 @@ func PipelineCreate(c *gin.Context) {
 
 	// write pipeline to database
 	pl := model.Pipeline{
-		Script:   string(body),
 		Revision: 0,
 		Name:     pi.Name,
-		Pipeline: &pi,
+		Script:   body,
 	}
 
 	err = pipelines.CreatePipeline(&pl)
@@ -194,12 +193,11 @@ func PipelineUpdate(c *gin.Context) {
 		return
 	}
 
-	if pipe.Script != string(body) {
+	if string(pipe.Script) != string(body) {
 		// update pipeline script
-		pipe.Script = string(body)
 		pipe.Revision = pipe.Revision + 1
 		pipe.Name = pi.Name
-		pipe.Pipeline = &pi
+		pipe.Script = body
 
 		err = pipe.Save()
 		if err != nil {

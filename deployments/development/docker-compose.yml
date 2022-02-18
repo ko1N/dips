@@ -20,6 +20,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: "mongodb"
       MONGO_INITDB_ROOT_PASSWORD: "mongodb"
+      MONGO_INITDB_DATABASE: "dips"
     volumes:
       - ./mongodb-init.js:/docker-entrypoint-initdb.d/mongodb-init.js:ro
     networks:

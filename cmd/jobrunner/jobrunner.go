@@ -41,7 +41,7 @@ func main() {
 
 	// TODO: configure concurrency, timeouts, etc
 	cl.NewJobWorker().
-		Concurrency(1000).
+		Concurrency(10).
 		Handler(handleJob).
 		Run()
 

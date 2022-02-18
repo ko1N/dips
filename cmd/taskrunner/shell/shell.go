@@ -18,7 +18,7 @@ func main() {
 	cl.
 		NewTaskWorker("shell").
 		// TODO: task timeout??
-		Concurrency(1000).
+		Concurrency(100).
 		Handler(shellHandler).
 		Run()
 

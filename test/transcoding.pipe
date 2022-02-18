@@ -6,4 +6,7 @@ stages:
   tasks:
 
   - service: shell
+    input: sleep 1
+
+  - service: shell
     input: "echo {{ filename }}"

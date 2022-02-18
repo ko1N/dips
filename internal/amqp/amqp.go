@@ -184,9 +184,14 @@ func handleProducer(mqchn *amqp.Channel, q amqp.Queue, chn chan Message) {
 				Expiration:    msg.Expiration,
 			})
 		if err != nil {
+			// re-queue failed message
+			// this could potentially block and lock our amqp implementation
+			// hence this is moved into a seperate goroutine
 			fmt.Printf("[AMQP] Error sending message, requeueing\n")
-			chn <- msg // re-queue failed message
-			return     // abort goroutine
+			go func() {
+				chn <- msg
+			}()
+			return // abort goroutine
 		}
 	}
 }

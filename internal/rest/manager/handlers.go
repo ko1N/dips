@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/ko1N/dips/pkg/client"
 )
 
@@ -30,8 +31,18 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func handleJobStatus(ev *client.EventHandler) {
-	ev.HandleStatus(func(msg *client.StatusEvent) error {
+func handleMessage(cl *client.Client) func(*client.MessageEvent) error {
+	return func(msg *client.MessageEvent) error {
+		messageHandler.Store(msg.JobID, messages.Message{
+			Type:    uint(msg.Type),
+			Message: msg.Message,
+		})
+		return nil
+	}
+}
+
+func handleStatus(cl *client.Client) func(*client.StatusEvent) error {
+	return func(msg *client.StatusEvent) error {
 		/*
 			// find job
 			job, err := jobs.FindJobByID(msg.JobID)
@@ -76,5 +87,5 @@ func handleJobStatus(ev *client.EventHandler) {
 		*/
 
 		return nil
-	})
+	}
 }

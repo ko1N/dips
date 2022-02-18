@@ -17,6 +17,7 @@ import (
 	"github.com/ko1N/dips/internal/persistence/database"
 	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/ko1N/dips/internal/rest/manager"
+	"github.com/ko1N/dips/pkg/client"
 )
 
 // @title dips
@@ -33,9 +34,9 @@ import (
 //go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/database/crud/job.go
 
 type config struct {
+	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
 	MongoDB  database.MongoDBConfig  `json:"mongodb" toml:"mongodb"`
 	InfluxDB database.InfluxDBConfig `json:"influxdb" toml:"influxdb"`
-	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
 }
 
 func main() {
@@ -50,6 +51,12 @@ func main() {
 	if _, err := toml.DecodeFile(*configPtr, &conf); err != nil {
 		srvlog.Crit("Config file could not be parsed", "error", err)
 		return
+	}
+
+	// setup dips client
+	dipscl, err := client.NewClient(conf.AMQP.Host)
+	if err != nil {
+		panic(err)
 	}
 
 	// setup database
@@ -87,7 +94,7 @@ func main() {
 	// setup manager api
 	err = manager.CreateManagerAPI(manager.ManagerAPIConfig{
 		Gin:            r,
-		AMQP:           conf.AMQP,
+		Dips:           dipscl,
 		MongoDB:        mongodb,
 		MessageHandler: messageHandler, // TODO: let managerAPI create its own db connections
 	})
