@@ -10,11 +10,13 @@ import (
 
 type Job struct {
 	jobQueue  (chan amqp.Message)
+	id        interface{}
 	job       *model.Job
 	variables map[string]interface{}
 }
 
 type JobRequest struct {
+	id        interface{}            `json:"id"`
 	Job       *model.Job             `json:"job"`
 	Variables map[string]interface{} `json:"variables"`
 }
@@ -23,6 +25,11 @@ func (c *Client) NewJob() *Job {
 	return &Job{
 		jobQueue: c.amqp.RegisterProducer("dips.worker.job"),
 	}
+}
+
+func (j *Job) Id(id interface{}) *Job {
+	j.id = id
+	return j
 }
 
 // Job - Sets the job
@@ -56,11 +63,12 @@ func (j *Job) Variables(variables map[string]interface{}) *Job {
 // Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
 	jobRequest := JobRequest{
+		id:        j.id,
 		Job:       j.job,
 		Variables: j.variables,
 	}
-	if jobRequest.Job.Id == "" {
-		jobRequest.Job.Id = bson.NewObjectId()
+	if jobRequest.id == nil {
+		jobRequest.id = bson.NewObjectId()
 	}
 
 	request, err := json.Marshal(&jobRequest)

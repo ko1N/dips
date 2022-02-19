@@ -16,13 +16,11 @@ services:
       - 15672:15672
 
   mongodb:
-    image: mongo:4
+    build: ./mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: "mongodb"
       MONGO_INITDB_ROOT_PASSWORD: "mongodb"
       MONGO_INITDB_DATABASE: "dips"
-    volumes:
-      - ./mongodb-init.js:/docker-entrypoint-initdb.d/mongodb-init.js:ro
     networks:
       - mongodb
     ports:
@@ -37,6 +35,8 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: "mongodb"
       ME_CONFIG_MONGODB_SERVER: "mongodb"
     networks:
+      - mongodb
+    depends_on:
       - mongodb
 
   influxdb:

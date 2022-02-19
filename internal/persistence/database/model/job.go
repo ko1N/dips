@@ -1,7 +1,5 @@
 package model
 
-import "github.com/zebresel-com/mongodm"
-
 // TODO: each job should contain all stages as a sublist when being inserted/parsed
 // TODO: each stage should track progress individually + total job progress (tasknum / totaltasks)
 
@@ -12,8 +10,7 @@ import "github.com/zebresel-com/mongodm"
 
 // Job - Database struct describing a pipeline job
 type Job struct {
-	mongodm.DocumentBase `json:",inline" bson:",inline"`
-	Name                 string                 `json:"name" bson:"name"`
-	Variables            map[string]interface{} `json:"variables" bson:"variables"`
-	Pipeline             *Pipeline              `json:"pipeline" bson:"pipeline"`
+	Name      string                 `json:"name" bson:"name"`
+	Variables map[string]interface{} `json:"variables" bson:"variables"`
+	Pipeline  *Pipeline              `json:"pipeline" bson:"pipeline"`
 }

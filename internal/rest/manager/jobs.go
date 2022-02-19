@@ -23,7 +23,7 @@ type JobListResponse struct {
 // @Success 200 {object} JobListResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/job/all [get]
-func JobList(c *gin.Context) {
+func (a *ManagerAPI) JobList(c *gin.Context) {
 	// TODO: pagination
 	jobList := []*model.Job{}
 	err := jobs.FindJobsQuery(bson.M{"deleted": false}).
@@ -57,7 +57,7 @@ type JobDetailsResponse struct {
 // @Success 200 {object} JobDetailsResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/job/details/{job_id} [get]
-func JobDetails(c *gin.Context) {
+func (a *ManagerAPI) JobDetails(c *gin.Context) {
 	id := c.Param("job_id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, FailureResponse{

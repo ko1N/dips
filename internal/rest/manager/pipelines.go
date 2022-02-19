@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ type PipelineCreateResponse struct {
 // @Success 200 {object} PipelineCreateResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/ [post]
-func PipelineCreate(c *gin.Context) {
+func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 	body, err := c.GetRawData()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
@@ -55,7 +56,11 @@ func PipelineCreate(c *gin.Context) {
 		Script:   body,
 	}
 
-	err = pipelines.CreatePipeline(&pl)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	ires, err := a.mongo.
+		Collection(colPipeline).
+		InsertOne(ctx, &pl)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to create database entry for pipeline",
@@ -63,6 +68,7 @@ func PipelineCreate(c *gin.Context) {
 		})
 		return
 	}
+	pl.ID = ires.InsertedID.(bson.ObjectId)
 
 	c.JSON(http.StatusOK, PipelineCreateResponse{
 		Status:   "pipeline created",
@@ -84,7 +90,7 @@ type PipelineListResponse struct {
 // @Success 200 {object} PipelineListResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/all [get]
-func PipelineList(c *gin.Context) {
+func (a *ManagerAPI) PipelineList(c *gin.Context) {
 	// TODO: pagination
 	pipelineList := []*model.Pipeline{}
 	err := pipelines.FindPipelinesQuery(bson.M{"deleted": false}).
@@ -117,7 +123,7 @@ type PipelineDetailsResponse struct {
 // @Success 200 {object} PipelineDetailsResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/details/{pipeline_id} [get]
-func PipelineDetails(c *gin.Context) {
+func (a *ManagerAPI) PipelineDetails(c *gin.Context) {
 	id := c.Param("pipeline_id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, FailureResponse{
@@ -127,7 +133,20 @@ func PipelineDetails(c *gin.Context) {
 		return
 	}
 
-	pipe, err := pipelines.FindPipelineByID(id)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	fres := a.mongo.
+		Collection(colPipeline).
+		FindOne(ctx, bson.D{{"_id", id}})
+	if fres.Err() != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find pipeline with id `" + id + "`",
+			Error:  fres.Err().Error(),
+		})
+		return
+	}
+	var pipeline model.Pipeline
+	err := fres.Decode(&pipeline)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
@@ -137,7 +156,7 @@ func PipelineDetails(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, PipelineDetailsResponse{
-		Pipeline: pipe,
+		Pipeline: &pipeline,
 	})
 }
 
@@ -153,7 +172,7 @@ func PipelineDetails(c *gin.Context) {
 // @Success 200 {object} PipelineDetailsResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/{pipeline_id} [patch]
-func PipelineUpdate(c *gin.Context) {
+func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 	// read pipeline from db
 	id := c.Param("pipeline_id")
 	if id == "" {
@@ -164,7 +183,20 @@ func PipelineUpdate(c *gin.Context) {
 		return
 	}
 
-	pipe, err := pipelines.FindPipelineByID(id)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	fres := a.mongo.
+		Collection(colPipeline).
+		FindOne(ctx, bson.D{{"_id", id}})
+	if fres.Err() != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find pipeline with id `" + id + "`",
+			Error:  fres.Err().Error(),
+		})
+		return
+	}
+	var pipeline model.Pipeline
+	err := fres.Decode(&pipeline)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
@@ -224,7 +256,7 @@ func PipelineUpdate(c *gin.Context) {
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/{pipeline_id} [delete]
-func PipelineDelete(c *gin.Context) {
+func (a *ManagerAPI) PipelineDelete(c *gin.Context) {
 	// read pipeline from db
 	id := c.Param("pipeline_id")
 	if id == "" {

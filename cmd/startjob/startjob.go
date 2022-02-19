@@ -33,7 +33,7 @@ func main() {
 		return
 	}
 
-	// setup amqp
+	// setup dips client
 	cl, err := client.NewClient(conf.AMQP.Host)
 	if err != nil {
 		panic(err)

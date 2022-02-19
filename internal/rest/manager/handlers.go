@@ -31,61 +31,57 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func handleMessage(cl *client.Client) func(*client.MessageEvent) error {
-	return func(msg *client.MessageEvent) error {
-		messageHandler.Store(msg.JobID, messages.Message{
-			Type:    uint(msg.Type),
-			Message: msg.Message,
-		})
-		return nil
-	}
+func (a *ManagerAPI) handleMessage(msg *client.MessageEvent) error {
+	messageHandler.Store(msg.JobID, messages.Message{
+		Type:    uint(msg.Type),
+		Message: msg.Message,
+	})
+	return nil
 }
 
-func handleStatus(cl *client.Client) func(*client.StatusEvent) error {
-	return func(msg *client.StatusEvent) error {
-		/*
-			// find job
-			job, err := jobs.FindJobByID(msg.JobID)
+func (a *ManagerAPI) handleStatus(msg *client.StatusEvent) error {
+	/*
+		// find job
+		job, err := jobs.FindJobByID(msg.JobID)
+		if err != nil {
+			fmt.Printf("unable to find job with id " + msg.JobID)
+			continue
+		}
+
+		task := findTaskByID(job, msg.TaskID)
+		if task == nil {
+			fmt.Printf("unable to find task with id \"%d\"\n", msg.TaskID)
+			continue
+		}
+	*/
+
+	/*
+		switch msg.Type {
+		case pipeline.JobStatusLog:
+			job.Logs = append(job.Logs, msg.Value)
+			break
+
+		case pipeline.JobStatusProgress:
+			val, err := strconv.Atoi(msg.Value)
 			if err != nil {
-				fmt.Printf("unable to find job with id " + msg.JobID)
+				fmt.Printf("unable to convert progress to int")
 				continue
 			}
+			task.Progress = uint(val)
+			updateJobProgress(job)
+			break
 
-			task := findTaskByID(job, msg.TaskID)
-			if task == nil {
-				fmt.Printf("unable to find task with id \"%d\"\n", msg.TaskID)
-				continue
-			}
-		*/
+		case pipeline.JobStatusStdOut:
+			task.StdOut = append(task.StdOut, msg.Value)
+			break
 
-		/*
-			switch msg.Type {
-			case pipeline.JobStatusLog:
-				job.Logs = append(job.Logs, msg.Value)
-				break
+		case pipeline.JobStatusStdErr:
+			task.StdErr = append(task.StdErr, msg.Value)
+			break
+		}
 
-			case pipeline.JobStatusProgress:
-				val, err := strconv.Atoi(msg.Value)
-				if err != nil {
-					fmt.Printf("unable to convert progress to int")
-					continue
-				}
-				task.Progress = uint(val)
-				updateJobProgress(job)
-				break
+		job.Save()
+	*/
 
-			case pipeline.JobStatusStdOut:
-				task.StdOut = append(task.StdOut, msg.Value)
-				break
-
-			case pipeline.JobStatusStdErr:
-				task.StdErr = append(task.StdErr, msg.Value)
-				break
-			}
-
-			job.Save()
-		*/
-
-		return nil
-	}
+	return nil
 }
