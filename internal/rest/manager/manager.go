@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ko1N/dips/internal/persistence/messages"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -27,7 +27,7 @@ type FailureResponse struct {
 
 type ManagerAPI struct {
 	gin            *gin.Engine
-	dipscl         *client.Client
+	dipscl         *dipscl.Client
 	mongo          *mongo.Database
 	messageHandler messages.MessageHandler
 }
@@ -35,7 +35,7 @@ type ManagerAPI struct {
 // CreateManagerAPI - adds the manager api to a gin engine
 func CreateManagerAPI(
 	gin *gin.Engine,
-	dipscl *client.Client,
+	dipscl *dipscl.Client,
 	mongo *mongo.Database,
 	messageHandler messages.MessageHandler,
 ) (*ManagerAPI, error) {

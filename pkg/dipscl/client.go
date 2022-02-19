@@ -1,4 +1,4 @@
-package client
+package dipscl
 
 import "github.com/ko1N/dips/internal/amqp"
 

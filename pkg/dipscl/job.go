@@ -1,4 +1,4 @@
-package client
+package dipscl
 
 import (
 	"encoding/json"

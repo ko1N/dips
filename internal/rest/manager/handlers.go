@@ -2,7 +2,7 @@ package manager
 
 import (
 	"github.com/ko1N/dips/internal/persistence/messages"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
 )
 
 /*
@@ -31,7 +31,7 @@ func updateJobProgress(job *model.Job) {
 }
 */
 
-func (a *ManagerAPI) handleMessage(msg *client.MessageEvent) error {
+func (a *ManagerAPI) handleMessage(msg *dipscl.MessageEvent) error {
 	a.messageHandler.Store(msg.JobId, messages.Message{
 		Type:    uint(msg.Type),
 		Message: msg.Message,
@@ -39,7 +39,7 @@ func (a *ManagerAPI) handleMessage(msg *client.MessageEvent) error {
 	return nil
 }
 
-func (a *ManagerAPI) handleStatus(msg *client.StatusEvent) error {
+func (a *ManagerAPI) handleStatus(msg *dipscl.StatusEvent) error {
 	/*
 		// find job
 		job, err := jobs.FindJobByID(msg.JobID)

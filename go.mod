@@ -11,12 +11,16 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/hanwen/go-fuse/v2 v2.1.0 // indirect
+	github.com/hirochachacha/go-smb2 v1.0.10 // indirect
 	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kr/pty v1.1.5 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-colorable v0.1.12
+	github.com/minio/minio-go/v7 v7.0.22 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/objx v0.2.0 // indirect

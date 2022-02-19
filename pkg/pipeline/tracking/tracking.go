@@ -2,7 +2,7 @@ package tracking
 
 import (
 	log "github.com/inconshreveable/log15"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
 	"github.com/mattn/go-colorable"
 )
 
@@ -11,7 +11,7 @@ import (
 // JobTrackerConfig - config for a job tracker instance
 type JobTrackerConfig struct {
 	Logger log.Logger
-	Client *client.Client
+	Client *dipscl.Client
 	JobId  string
 }
 
@@ -32,10 +32,10 @@ func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
 				return nil
 			}
 			conf.Client.NewEvent().
-				Message(&client.MessageEvent{
+				Message(&dipscl.MessageEvent{
 					JobId:   conf.JobId,
 					TaskIdx: 0,
-					Type:    client.StatusMessage,
+					Type:    dipscl.StatusMessage,
 					Message: r.Msg,
 				}).
 				Dispatch()
@@ -70,17 +70,17 @@ func (t *JobTracker) TrackProgress(progress uint) {
 		return
 	}
 	t.config.Client.NewEvent().
-		Status(&client.StatusEvent{
+		Status(&dipscl.StatusEvent{
 			JobId:    t.config.JobId,
 			TaskIdx:  t.taskIdx,
-			Type:     client.ProgressEvent,
+			Type:     dipscl.ProgressEvent,
 			Progress: progress,
 		}).
 		Dispatch()
 }
 
 // Message - tracks messages of the current task
-func (t *JobTracker) Message(mt client.MessageEventType, msg string) {
+func (t *JobTracker) Message(mt dipscl.MessageEventType, msg string) {
 	if t.config.Client == nil || msg == "" {
 		// do not persist empty messages
 		return
@@ -88,7 +88,7 @@ func (t *JobTracker) Message(mt client.MessageEventType, msg string) {
 
 	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
 	t.config.Client.NewEvent().
-		Message(&client.MessageEvent{
+		Message(&dipscl.MessageEvent{
 			JobId:   t.config.JobId,
 			TaskIdx: t.taskIdx,
 			Type:    mt,
@@ -100,30 +100,30 @@ func (t *JobTracker) Message(mt client.MessageEventType, msg string) {
 // Status - tracks a status message
 func (t *JobTracker) Status(msg string) {
 	t.Logger().Info(msg)
-	t.Message(client.StatusMessage, msg)
+	t.Message(dipscl.StatusMessage, msg)
 }
 
 func (t *JobTracker) Error(msg string, err error) {
 	if err != nil {
 		t.Logger().Crit(msg, "error", err)
-		t.Message(client.ErrorMessage, msg+" ("+err.Error()+")")
+		t.Message(dipscl.ErrorMessage, msg+" ("+err.Error()+")")
 	} else {
 		t.Logger().Crit(msg)
-		t.Message(client.ErrorMessage, msg)
+		t.Message(dipscl.ErrorMessage, msg)
 	}
 }
 
 // StdIn - tracks a stdin message
 func (t *JobTracker) StdIn(msg string) {
-	t.Message(client.StdInMessage, msg)
+	t.Message(dipscl.StdInMessage, msg)
 }
 
 // StdOut - tracks a stdin message
 func (t *JobTracker) StdOut(msg string) {
-	t.Message(client.StdOutMessage, msg)
+	t.Message(dipscl.StdOutMessage, msg)
 }
 
 // StdErr - tracks a stdin message
 func (t *JobTracker) StdErr(msg string) {
-	t.Message(client.StdErrMessage, msg)
+	t.Message(dipscl.StdErrMessage, msg)
 }

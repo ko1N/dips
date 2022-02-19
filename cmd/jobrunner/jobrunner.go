@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ko1N/dips/internal/amqp"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
 	"github.com/ko1N/dips/pkg/pipeline"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
 
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// setup amqp
-	cl, err := client.NewClient(conf.AMQP.Host)
+	cl, err := dipscl.NewClient(conf.AMQP.Host)
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func main() {
 
 // TODO: send status updates containing log messages
 // TODO: send status updates containing raw cmd exec log
-func handleJob(job *client.JobContext) error {
+func handleJob(job *dipscl.JobContext) error {
 	// create logging instance for this pipeline
 	tracker := tracking.CreateJobTracker(&tracking.JobTrackerConfig{
 		Logger: log.New("cmd", "worker"), // TODO: dep injection

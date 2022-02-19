@@ -17,7 +17,7 @@ import (
 	"github.com/ko1N/dips/internal/persistence/database"
 	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/ko1N/dips/internal/rest/manager"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
 )
 
 // @title dips
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	// setup dips client
-	dipscl, err := client.NewClient(conf.AMQP.Host)
+	dipscl, err := dipscl.NewClient(conf.AMQP.Host)
 	if err != nil {
 		panic(err)
 	}
