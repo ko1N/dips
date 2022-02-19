@@ -14,8 +14,6 @@ const mongoTimeout = 5 * time.Second
 const colPipeline = "pipeline"
 const colJobs = "jobs"
 
-var messageHandler messages.MessageHandler
-
 // SuccessResponse - reponse for a successful operation
 type SuccessResponse struct {
 	Status string `json:"status"`

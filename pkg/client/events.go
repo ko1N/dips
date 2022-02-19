@@ -149,7 +149,7 @@ func (h *EventHandler) Run() {
 	// TODO: graceful shutdown
 	if h.statusHandler != nil {
 		go func() {
-			queue := h.client.amqp.RegisterProducer("dips.event.status")
+			queue := h.client.amqp.RegisterConsumer("dips.event.status")
 			for request := range queue {
 				var statusEvent StatusEvent
 				err := json.Unmarshal([]byte(request.Payload), &statusEvent)
@@ -163,7 +163,7 @@ func (h *EventHandler) Run() {
 
 	if h.messageHandler != nil {
 		go func() {
-			queue := h.client.amqp.RegisterProducer("dips.event.message")
+			queue := h.client.amqp.RegisterConsumer("dips.event.message")
 			for request := range queue {
 				var messageEvent MessageEvent
 				err := json.Unmarshal([]byte(request.Payload), &messageEvent)
@@ -177,7 +177,7 @@ func (h *EventHandler) Run() {
 
 	if h.variableHandler != nil {
 		go func() {
-			queue := h.client.amqp.RegisterProducer("dips.event.variable")
+			queue := h.client.amqp.RegisterConsumer("dips.event.variable")
 			for request := range queue {
 				var variableEvent VariableEvent
 				err := json.Unmarshal([]byte(request.Payload), &variableEvent)

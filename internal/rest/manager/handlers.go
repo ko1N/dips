@@ -32,7 +32,7 @@ func updateJobProgress(job *model.Job) {
 */
 
 func (a *ManagerAPI) handleMessage(msg *client.MessageEvent) error {
-	messageHandler.Store(msg.JobId, messages.Message{
+	a.messageHandler.Store(msg.JobId, messages.Message{
 		Type:    uint(msg.Type),
 		Message: msg.Message,
 	})

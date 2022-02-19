@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/internal/persistence/messages"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -99,9 +100,10 @@ func (a *ManagerAPI) JobDetails(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
 	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(id)
 	fres := a.mongo.
 		Collection(colJobs).
-		FindOne(ctx, bson.M{"_id": id})
+		FindOne(ctx, bson.M{"_id": oid})
 	if fres.Err() != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find job with id " + id,
@@ -120,7 +122,7 @@ func (a *ManagerAPI) JobDetails(c *gin.Context) {
 	}
 
 	// fetch job messages
-	messages := messageHandler.GetAll(id)
+	messages := a.messageHandler.GetAll(id)
 
 	c.JSON(http.StatusOK, JobDetailsResponse{
 		Job:      &job,
