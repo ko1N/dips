@@ -56,7 +56,7 @@ func handleJob(job *client.JobContext) error {
 	tracker := tracking.CreateJobTracker(&tracking.JobTrackerConfig{
 		Logger: log.New("cmd", "worker"), // TODO: dep injection
 		Client: job.Client,
-		JobID:  job.Request.Job.Id.Hex(),
+		JobId:  job.Request.Job.Id.Hex(),
 	})
 
 	pi, err := pipeline.CreateFromBytes(job.Request.Job.Pipeline.Script)

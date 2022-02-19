@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// setup database
-	mongodb, err := database.MongoDBConnect(&conf.MongoDB)
+	mongo, err := database.MongoDBConnect(&conf.MongoDB)
 	if err != nil {
 		srvlog.Crit("Could not connect to mongodb instances", "error", err)
 		return
@@ -88,12 +88,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	err = manager.CreateManagerAPI(manager.ManagerAPIConfig{
-		Gin:            r,
-		Dips:           dipscl,
-		MongoDB:        mongodb,
-		MessageHandler: messageHandler, // TODO: let managerAPI create its own db connections
-	})
+	_, err = manager.CreateManagerAPI(r, dipscl, mongo, messageHandler)
 	if err != nil {
 		srvlog.Crit("Unable to create Manager API", "error", err)
 		return

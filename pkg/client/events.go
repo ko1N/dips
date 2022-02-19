@@ -23,8 +23,8 @@ const (
 )
 
 type StatusEvent struct {
-	JobID    string
-	TaskID   uint
+	JobId    string
+	TaskIdx  uint
 	Type     StatusEventType
 	Progress uint
 	//JobStatus string // TODO: enum
@@ -42,8 +42,8 @@ const (
 )
 
 type MessageEvent struct {
-	JobID   string
-	TaskID  uint
+	JobId   string
+	TaskIdx uint
 	Type    MessageEventType
 	Message string
 }

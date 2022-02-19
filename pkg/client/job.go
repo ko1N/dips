@@ -5,18 +5,16 @@ import (
 
 	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/internal/persistence/database/model"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Job struct {
 	jobQueue  (chan amqp.Message)
-	id        interface{}
 	job       *model.Job
 	variables map[string]interface{}
 }
 
 type JobRequest struct {
-	id        interface{}            `json:"id"`
 	Job       *model.Job             `json:"job"`
 	Variables map[string]interface{} `json:"variables"`
 }
@@ -25,11 +23,6 @@ func (c *Client) NewJob() *Job {
 	return &Job{
 		jobQueue: c.amqp.RegisterProducer("dips.worker.job"),
 	}
-}
-
-func (j *Job) Id(id interface{}) *Job {
-	j.id = id
-	return j
 }
 
 // Job - Sets the job
@@ -46,7 +39,7 @@ func (j *Job) Name(name string) *Job {
 	return j
 }
 
-func (j *Job) Pipeline(script []byte) *Job {
+func (j *Job) Pipeline(script string) *Job {
 	if j.job.Pipeline == nil {
 		j.job.Pipeline = &model.Pipeline{}
 	}
@@ -63,12 +56,12 @@ func (j *Job) Variables(variables map[string]interface{}) *Job {
 // Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
 	jobRequest := JobRequest{
-		id:        j.id,
 		Job:       j.job,
 		Variables: j.variables,
 	}
-	if jobRequest.id == nil {
-		jobRequest.id = bson.NewObjectId()
+	if jobRequest.Job.Id == nil {
+		id := primitive.NewObjectID()
+		jobRequest.Job.Id = &id
 	}
 
 	request, err := json.Marshal(&jobRequest)

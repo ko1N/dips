@@ -44,7 +44,7 @@ func main() {
 	if err != nil {
 		srvlog.Crit("unable to open pipeline script file", "error", err)
 	}
-	for i := 1; i < 100000; i++ {
+	for i := 1; i < 1000; i++ {
 		go func() {
 			cl.NewJob().
 				Name("test").

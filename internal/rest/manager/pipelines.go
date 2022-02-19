@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/pkg/pipeline"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -40,7 +41,7 @@ func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 	}
 
 	// pre-validate body
-	pi, err := pipeline.CreateFromBytes(body)
+	pi, err := pipeline.CreateFromBytes(string(body))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to parse pipeline",
@@ -53,7 +54,7 @@ func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 	pl := model.Pipeline{
 		Revision: 0,
 		Name:     pi.Name,
-		Script:   body,
+		Script:   string(body),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
@@ -68,7 +69,8 @@ func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 		})
 		return
 	}
-	pl.ID = ires.InsertedID.(bson.ObjectId)
+	id := ires.InsertedID.(primitive.ObjectID)
+	pl.Id = &id
 
 	c.JSON(http.StatusOK, PipelineCreateResponse{
 		Status:   "pipeline created",
@@ -78,7 +80,7 @@ func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 
 // PipelineListResponse - response with a list of pipelines
 type PipelineListResponse struct {
-	Pipelines []*model.Pipeline `json:"pipelines"`
+	Pipelines []model.Pipeline `json:"pipelines"`
 }
 
 // PipelineList - lists all registered pipelines
@@ -92,17 +94,40 @@ type PipelineListResponse struct {
 // @Router /manager/pipeline/all [get]
 func (a *ManagerAPI) PipelineList(c *gin.Context) {
 	// TODO: pagination
-	pipelineList := []*model.Pipeline{}
-	err := pipelines.FindPipelinesQuery(bson.M{"deleted": false}).
-		Select(bson.M{"name": true}).
-		Exec(&pipelineList)
+	// TODO: filter name
+	pipelineList := []model.Pipeline{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	cur, err := a.mongo.Collection(colPipeline).Find(ctx, bson.M{})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
-			Status: "unable to find any pipelines",
+			Status: "error fetching pipelines",
 			Error:  err.Error(),
 		})
 		return
 	}
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		var pipe model.Pipeline
+		err := cur.Decode(&pipe)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, FailureResponse{
+				Status: "error fetching pipelines2",
+				Error:  err.Error(),
+			})
+			return
+		}
+		pipelineList = append(pipelineList, pipe)
+	}
+	if err := cur.Err(); err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "error fetching pipelines3",
+			Error:  err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, PipelineListResponse{
 		Pipelines: pipelineList,
 	})
@@ -135,9 +160,10 @@ func (a *ManagerAPI) PipelineDetails(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
 	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(id)
 	fres := a.mongo.
 		Collection(colPipeline).
-		FindOne(ctx, bson.D{{"_id", id}})
+		FindOne(ctx, bson.M{"_id": oid})
 	if fres.Err() != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
@@ -185,9 +211,10 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
 	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(id)
 	fres := a.mongo.
 		Collection(colPipeline).
-		FindOne(ctx, bson.D{{"_id", id}})
+		FindOne(ctx, bson.M{"_id": oid})
 	if fres.Err() != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
@@ -195,8 +222,8 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 		})
 		return
 	}
-	var pipeline model.Pipeline
-	err := fres.Decode(&pipeline)
+	var pipe model.Pipeline
+	err := fres.Decode(&pipe)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
@@ -216,7 +243,7 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 	}
 
 	// validate body
-	pi, err := pipeline.CreateFromBytes(body)
+	pi, err := pipeline.CreateFromBytes(string(body))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to parse pipeline",
@@ -229,9 +256,11 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 		// update pipeline script
 		pipe.Revision = pipe.Revision + 1
 		pipe.Name = pi.Name
-		pipe.Script = body
+		pipe.Script = string(body)
 
-		err = pipe.Save()
+		_, err := a.mongo.
+			Collection(colPipeline).
+			UpdateByID(ctx, oid, bson.M{"$set": &pipe})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, FailureResponse{
 				Status: "unable to update database entry for pipeline",
@@ -242,7 +271,7 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, PipelineDetailsResponse{
-		Pipeline: pipe,
+		Pipeline: &pipe,
 	})
 }
 
@@ -267,16 +296,23 @@ func (a *ManagerAPI) PipelineDelete(c *gin.Context) {
 		return
 	}
 
-	pipe, err := pipelines.FindPipelineByID(id)
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(id)
+	fres := a.mongo.
+		Collection(colPipeline).
+		FindOne(ctx, bson.M{"_id": oid})
+	if fres.Err() != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipeline with id `" + id + "`",
-			Error:  err.Error(),
+			Error:  fres.Err().Error(),
 		})
 		return
 	}
 
-	err = pipe.Delete()
+	_, err := a.mongo.
+		Collection(colPipeline).
+		DeleteOne(ctx, bson.M{"_id": oid})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to delete database entry for pipeline",

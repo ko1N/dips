@@ -44,14 +44,14 @@ type Pipeline struct {
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
-func CreateFromBytes(data []byte) (*Pipeline, error) {
+func CreateFromBytes(data string) (*Pipeline, error) {
 	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
 		return nil, errors.New("Not a valid pipeline script. should start with `---`")
 	}
 
 	var script interface{}
-	err := yaml.Unmarshal(data, &script)
+	err := yaml.Unmarshal([]byte(data), &script)
 	if err != nil {
 		return nil, err
 	}

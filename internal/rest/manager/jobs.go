@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +12,7 @@ import (
 
 // JobListResponse - response with a list of jobs
 type JobListResponse struct {
-	Jobs []*model.Job `json:"jobs"`
+	Jobs []model.Job `json:"jobs"`
 }
 
 // JobList - lists all jobs
@@ -25,10 +26,39 @@ type JobListResponse struct {
 // @Router /manager/job/all [get]
 func (a *ManagerAPI) JobList(c *gin.Context) {
 	// TODO: pagination
-	jobList := []*model.Job{}
-	err := jobs.FindJobsQuery(bson.M{"deleted": false}).
-		Select(bson.M{"name": true}).
-		Exec(&jobList)
+	// TODO: filter just name
+	jobList := []model.Job{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	cur, err := a.mongo.Collection(colJobs).Find(ctx, bson.M{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "error fetching jobs",
+			Error:  err.Error(),
+		})
+		return
+	}
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		var job model.Job
+		err := cur.Decode(&job)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, FailureResponse{
+				Status: "error fetching jobs",
+				Error:  err.Error(),
+			})
+			return
+		}
+		jobList = append(jobList, job)
+	}
+	if err := cur.Err(); err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "error fetching jobs",
+			Error:  err.Error(),
+		})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipelines",
@@ -67,7 +97,20 @@ func (a *ManagerAPI) JobDetails(c *gin.Context) {
 		return
 	}
 
-	job, err := jobs.FindJobByID(id)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	fres := a.mongo.
+		Collection(colJobs).
+		FindOne(ctx, bson.M{"_id": id})
+	if fres.Err() != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find job with id " + id,
+			Error:  fres.Err().Error(),
+		})
+		return
+	}
+	var job model.Job
+	err := fres.Decode(&job)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find job with id " + id,
@@ -80,7 +123,7 @@ func (a *ManagerAPI) JobDetails(c *gin.Context) {
 	messages := messageHandler.GetAll(id)
 
 	c.JSON(http.StatusOK, JobDetailsResponse{
-		Job:      job,
+		Job:      &job,
 		Messages: messages,
 	})
 }

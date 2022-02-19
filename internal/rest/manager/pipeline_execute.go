@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ko1N/dips/internal/persistence/database/model"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -14,6 +15,11 @@ import (
 type PipelineExecuteRequest struct {
 	Name      string                 `json:"name"`
 	Variables map[string]interface{} `json:"variables"`
+}
+
+// PipelineExecuteResponse - Response when a pipeline was started
+type PipelineExecuteResponse struct {
+	Job *model.Job `json:"job"`
 }
 
 // PipelineExecute - executes a pipeline
@@ -25,13 +31,13 @@ type PipelineExecuteRequest struct {
 // @Produce json
 // @Param pipeline_id path string true "Pipeline ID"
 // @Param execute_request body PipelineExecuteRequest true "Request Body"
-// @Success 200 {object} SuccessResponse
+// @Success 200 {object} PipelineExecuteResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/pipeline/execute/{pipeline_id} [post]
 func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 	// try to find requested pipeline
-	pipelineID := c.Param("pipeline_id")
-	if pipelineID == "" {
+	pipelineId := c.Param("pipeline_id")
+	if pipelineId == "" {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "invalid pipeline_id",
 			Error:  "pipeline_id must not be empty",
@@ -41,12 +47,13 @@ func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
 	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(pipelineId)
 	fres := a.mongo.
 		Collection(colPipeline).
-		FindOne(ctx, bson.D{{"_id", pipelineID}})
+		FindOne(ctx, bson.M{"_id": oid})
 	if fres.Err() != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
-			Status: "unable to find pipeline with id `" + pipelineID + "`",
+			Status: "unable to find pipeline with id `" + pipelineId + "`",
 			Error:  fres.Err().Error(),
 		})
 		return
@@ -55,7 +62,7 @@ func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 	err := fres.Decode(&pipeline)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
-			Status: "unable to find pipeline with id `" + pipelineID + "`",
+			Status: "unable to find pipeline with id `" + pipelineId + "`",
 			Error:  err.Error(),
 		})
 		return
@@ -98,15 +105,16 @@ func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 		})
 		return
 	}
+	id := ires.InsertedID.(primitive.ObjectID)
+	job.Id = &id
 
 	// send pipeline to worker
 	a.dipscl.NewJob().
-		Id(ires.InsertedID).
 		Job(&job).
 		Dispatch()
 
 	// return success
-	c.JSON(http.StatusOK, SuccessResponse{
-		Status: "pipeline job created",
+	c.JSON(http.StatusOK, PipelineExecuteResponse{
+		Job: &job,
 	})
 }

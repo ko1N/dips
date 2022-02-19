@@ -12,19 +12,19 @@ import (
 type JobTrackerConfig struct {
 	Logger log.Logger
 	Client *client.Client
-	JobID  string
+	JobId  string
 }
 
 // JobTracker - tracks job status, progress and logs
 type JobTracker struct {
-	config JobTrackerConfig
-	jobLog log.Logger
-	taskID uint
+	config  JobTrackerConfig
+	jobLog  log.Logger
+	taskIdx uint
 }
 
 // CreateJobTracker - creates a new job tracking instance
 func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
-	jobLog := conf.Logger.New("job", conf.JobID)
+	jobLog := conf.Logger.New("job", conf.JobId)
 	jobLog.SetHandler(log.MultiHandler(
 		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
 		log.FuncHandler(func(r *log.Record) error {
@@ -33,8 +33,8 @@ func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
 			}
 			conf.Client.NewEvent().
 				Message(&client.MessageEvent{
-					JobID:   conf.JobID,
-					TaskID:  0,
+					JobId:   conf.JobId,
+					TaskIdx: 0,
 					Type:    client.StatusMessage,
 					Message: r.Msg,
 				}).
@@ -44,11 +44,11 @@ func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
 	))
 
 	tracker := JobTracker{
-		config: *conf,
-		jobLog: jobLog,
-		taskID: 0,
+		config:  *conf,
+		jobLog:  jobLog,
+		taskIdx: 0,
 	}
-	tracker.Logger().Info("tracker for job `" + conf.JobID + "` created")
+	tracker.Logger().Info("tracker for job `" + conf.JobId + "` created")
 
 	return tracker
 }
@@ -60,8 +60,8 @@ func (t *JobTracker) Logger() log.Logger {
 }
 
 // TrackTask - tracks a task change
-func (t *JobTracker) TrackTask(taskID uint) {
-	t.taskID = taskID
+func (t *JobTracker) TrackTask(taskIdx uint) {
+	t.taskIdx = taskIdx
 }
 
 // TrackProgress - tracks progress of the current task
@@ -71,8 +71,8 @@ func (t *JobTracker) TrackProgress(progress uint) {
 	}
 	t.config.Client.NewEvent().
 		Status(&client.StatusEvent{
-			JobID:    t.config.JobID,
-			TaskID:   t.taskID,
+			JobId:    t.config.JobId,
+			TaskIdx:  t.taskIdx,
 			Type:     client.ProgressEvent,
 			Progress: progress,
 		}).
@@ -89,8 +89,8 @@ func (t *JobTracker) Message(mt client.MessageEventType, msg string) {
 	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
 	t.config.Client.NewEvent().
 		Message(&client.MessageEvent{
-			JobID:   t.config.JobID,
-			TaskID:  t.taskID,
+			JobId:   t.config.JobId,
+			TaskIdx: t.taskIdx,
 			Type:    mt,
 			Message: msg,
 		}).

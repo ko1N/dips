@@ -10,10 +10,12 @@ import (
 
 // MongoDBConfig - config entry describing a database config
 type MongoDBConfig struct {
-	Hosts    []string `json:"hosts" toml:"hosts"`
-	Database string   `json:"database" toml:"database"`
-	Username string   `json:"username" toml:"username"`
-	Password string   `json:"password" toml:"password"`
+	Hosts         []string `json:"hosts" toml:"hosts"`
+	AuthMechanism string   `json:"auth_mechanism" toml:"auth_mechanism"`
+	AuthSource    string   `json:"auth_source" toml:"auth_source"`
+	Username      string   `json:"username" toml:"username"`
+	Password      string   `json:"password" toml:"password"`
+	Database      string   `json:"database" toml:"database"`
 }
 
 // MongoDBConnect - opens a connection to mongodb and returns the connection object
@@ -22,13 +24,14 @@ func MongoDBConnect(conf *MongoDBConfig) (*mongo.Database, error) {
 	defer cancel()
 
 	credential := options.Credential{
-		AuthMechanism: "PLAIN",
+		AuthMechanism: conf.AuthMechanism,
+		AuthSource:    conf.AuthSource,
 		Username:      conf.Username,
 		Password:      conf.Password,
 	}
 	clientOpts := options.
 		Client().
-		ApplyURI("mongodb://" + conf.Hosts[0]).
+		ApplyURI(conf.Hosts[0]).
 		SetAuth(credential)
 
 	mongo, err := mongo.Connect(ctx, clientOpts)
