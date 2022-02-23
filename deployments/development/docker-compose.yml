@@ -68,7 +68,7 @@ services:
       MINIO_ROOT_PASSWORD: "miniominio"
     volumes:
       - minio-data:/data
-    command: server /data/minio --console-address ":9090"
+    command: server --console-address :9090 /data/minio
     networks:
       - minio
     ports:
