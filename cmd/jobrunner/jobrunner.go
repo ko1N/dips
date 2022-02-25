@@ -95,7 +95,7 @@ func handleJob(job *dipscl.JobContext) error {
 	// run execution
 	err = exec.Run()
 	if err != nil {
-		tracker.Crit("error while executing pipeline", "error", err)
+		tracker.Crit("error while executing pipeline: %s", err)
 	}
 
 	return nil

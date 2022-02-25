@@ -102,7 +102,7 @@ func (e *ExecutionContext) Run() error {
 
 				result, err := (e.taskHandler)(&task, input)
 				if err != nil {
-					e.Tracker.Error("task execution failed", err)
+					e.Tracker.Error("task execution failed: %s", err)
 					return err
 				}
 
