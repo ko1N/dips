@@ -36,7 +36,9 @@ func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobT
 }
 
 func (e *ExecutionContext) Variables(variables map[string]interface{}) *ExecutionContext {
-	e.variables = variables
+	if variables != nil {
+		e.variables = variables
+	}
 	return e
 }
 
@@ -86,9 +88,9 @@ func (e *ExecutionContext) Run() error {
 			if e.taskHandler != nil {
 				// TODO: put this logic in seperate objects
 				input := make(map[string]string)
-				for key, value := range task.Input {
+				for key, value := range task.Parameters {
 					var err error
-					input[key] = string(expression.ReplaceAllFunc([]byte(value), func(m []byte) []byte {
+					input[key] = string(expression.ReplaceAllFunc([]byte(value.(string)), func(m []byte) []byte {
 						t := strings.TrimSpace(string(m[2 : len(m)-2]))
 						var v string
 						v, err = (&Expression{Script: string(t)}).Evaluate(e.variables)
@@ -115,8 +117,24 @@ func (e *ExecutionContext) Run() error {
 
 				// convert result into tengo objects and store it
 				if task.Register != "" {
-					v, err := tengo.FromInterface(result)
+					fmt.Printf("%+v\n", result)
+					var v tengo.Object
+					var err error
+					if result.Error == nil {
+						v, err = tengo.FromInterface(map[string]interface{}{
+							"Success": result.Success,
+							"Output":  result.Output,
+						})
+					} else {
+						v, err = tengo.FromInterface(map[string]interface{}{
+							"Success": result.Success,
+							"Error":   result.Error,
+							"Output":  result.Output,
+						})
+					}
 					if err != nil {
+						fmt.Printf("%+v\n", e.variables)
+						fmt.Println(err)
 						e.variables[task.Register] = &tengo.ObjectPtr{}
 					} else {
 						e.variables[task.Register] = v

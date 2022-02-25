@@ -1,0 +1,15 @@
+---
+name: probe test pipe
+
+stages:
+- stage: testing conditional execution
+  tasks:
+
+  - service:
+      name: ffprobe
+      source: minio://minio:miniominio@localhost:9000/input/Big_Buck_Bunny_1080_10s_30MB.mp4
+    register: ffprobe_result
+
+  - service:
+      name: shell
+      cmd: "echo {{ ffprobe_result.Output.probe.streams[0] }}"

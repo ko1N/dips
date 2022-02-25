@@ -31,7 +31,7 @@ func main() {
 func shellHandler(task *dipscl.TaskContext) (map[string]interface{}, error) {
 	fmt.Printf("handling 'shell' task %s: %s\n", task.Request.Name, task.Request.Params)
 
-	executable := task.Request.Params[""]
+	executable := task.Request.Params["cmd"]
 	cmdline := strings.Split(executable, " ")
 
 	res, err := task.Environment.Execute(

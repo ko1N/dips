@@ -13,20 +13,15 @@ type Variable struct {
 	Value string `json:"value" bson:"value"`
 }
 
-// Parameter -
-type Parameter struct {
-	Name string `json:"name" bson:"name"`
-}
-
 // Task -
 type Task struct {
-	Name         string            `json:"name" bson:"name"`
-	Service      string            `json:"service" bson:"service"`
-	Input        map[string]string `json:"input" bson:"input"`
-	IgnoreErrors bool              `json:"ignore_errors" bson:"ignore_errors"`
-	Register     string            `json:"register" bson:"register"`
-	Notify       []string          `json:"notify" bson:"notify"` // NotifyRef
-	When         Expression        `json:"when" bson:"when"`
+	Name         string                 `json:"name" bson:"name"`
+	Service      string                 `json:"service" bson:"service"`
+	Parameters   map[string]interface{} `json:"input" bson:"input"`
+	IgnoreErrors bool                   `json:"ignore_errors" bson:"ignore_errors"`
+	Register     string                 `json:"register" bson:"register"`
+	Notify       []string               `json:"notify" bson:"notify"` // NotifyRef
+	When         Expression             `json:"when" bson:"when"`
 }
 
 // Stage -
@@ -38,9 +33,8 @@ type Stage struct {
 
 // Pipeline -
 type Pipeline struct {
-	Name       string      `json:"name" bson:"name"`
-	Parameters []Parameter `json:"parameters" bson:"parameters"`
-	Stages     []Stage     `json:"stages" bson:"stages"`
+	Name   string  `json:"name" bson:"name"`
+	Stages []Stage `json:"stages" bson:"stages"`
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
@@ -70,12 +64,6 @@ func parsePipeline(script map[interface{}]interface{}) (*Pipeline, error) {
 		result.Name = name.(string)
 	}
 
-	var err error
-	result.Parameters, err = parseParameters(script)
-	if err != nil {
-		return nil, err
-	}
-
 	if stages, ok := script["stages"]; ok {
 		for _, s := range stages.([]interface{}) {
 			stage, err := parseStage(s.(map[interface{}]interface{}))
@@ -87,18 +75,6 @@ func parsePipeline(script map[interface{}]interface{}) (*Pipeline, error) {
 	}
 
 	return &result, nil
-}
-
-func parseParameters(script map[interface{}]interface{}) ([]Parameter, error) {
-	var result []Parameter
-	if params, ok := script["parameters"]; ok {
-		for _, value := range params.([]interface{}) {
-			result = append(result, Parameter{
-				Name: value.(string),
-			})
-		}
-	}
-	return result, nil
 }
 
 func parseStage(script map[interface{}]interface{}) (Stage, error) {
@@ -146,18 +122,23 @@ func parseTask(script map[interface{}]interface{}) (*Task, error) {
 			break
 
 		case "service":
-			result.Service = value.(string)
-			break
-
-		case "input":
-			// TODO: LIST
-			result.Input = make(map[string]string)
-			if val, ok := value.(map[interface{}]interface{}); ok {
-				for key, val := range val {
-					result.Input[key.(string)] = val.(string)
+			if v, ok := value.(string); ok {
+				result.Service = v
+			} else if v, ok := value.(map[interface{}]interface{}); ok {
+				params := make(map[string]interface{})
+				for k, v := range v {
+					if k.(string) == "name" {
+						result.Service = v.(string)
+					} else {
+						params[k.(string)] = v
+					}
 				}
-			} else if val, ok := value.(string); ok {
-				result.Input[""] = val
+				if result.Service == "" {
+					return nil, errors.New("Invalid syntax when parsing \"service\", missing \"name\"")
+				}
+				result.Parameters = params
+			} else {
+				return nil, errors.New("Invalid syntax when parsing \"service\"")
 			}
 			break
 

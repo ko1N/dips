@@ -1,0 +1,16 @@
+---
+name: shell test pipe
+
+stages:
+- stage: testing conditional execution
+  tasks:
+
+  - service: shell
+    input: sleep 5
+
+  - service: shell
+    input: wget https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4
+
+  - service:
+      name: shell
+      cmd: "echo {{ filename }}"

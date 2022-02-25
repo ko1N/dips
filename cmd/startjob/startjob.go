@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 
 	"github.com/ko1N/dips/internal/amqp"
-	"github.com/ko1N/dips/pkg/client"
+	"github.com/ko1N/dips/pkg/dipscl"
+	"github.com/ko1N/dips/pkg/pipeline"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/inconshreveable/log15"
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	// setup dips client
-	cl, err := client.NewClient(conf.AMQP.Host)
+	_, err := dipscl.NewClient(conf.AMQP.Host)
 	if err != nil {
 		panic(err)
 	}
@@ -43,18 +44,27 @@ func main() {
 	contents, err := ioutil.ReadFile(*pipelinePtr)
 	if err != nil {
 		srvlog.Crit("unable to open pipeline script file", "error", err)
+		return
 	}
-	for i := 1; i < 1000; i++ {
-		go func() {
-			cl.NewJob().
-				Name("test").
-				Pipeline(contents).
-				Variables(map[string]interface{}{
-					"filename": "minio://minio:miniominio@172.17.0.1:9000/test/test.mp4",
-				}).
-				Dispatch()
-		}()
+	_, err = pipeline.CreateFromBytes(string(contents))
+	if err != nil {
+		srvlog.Crit("unable to parse pipeline script file", "error", err)
+		return
 	}
+
+	/*
+		for i := 1; i < 1000; i++ {
+			go func() {
+				cl.NewJob().
+					Name("test").
+					Pipeline(contents).
+					Variables(map[string]interface{}{
+						"filename": "minio://minio:miniominio@172.17.0.1:9000/test/test.mp4",
+					}).
+					Dispatch()
+			}()
+		}
+	*/
 
 	signal := make(chan struct{})
 	<-signal
