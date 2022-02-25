@@ -51,8 +51,8 @@ func (e *ExecutionContext) TaskHandler(handler func(*Task, map[string]string) (*
 
 // Run - runs the execution
 func (e *ExecutionContext) Run() error {
-	e.Tracker.Status("------ Starting Pipeline: " + e.JobID)
-	defer e.Tracker.Status("------ Finished Pipeline: " + e.JobID)
+	e.Tracker.Info("------ Starting Pipeline: " + e.JobID)
+	defer e.Tracker.Info("------ Finished Pipeline: " + e.JobID)
 
 	// TODO: add CreateExecutionContext
 	// TODO: move context into seperate file
@@ -62,12 +62,11 @@ func (e *ExecutionContext) Run() error {
 
 	taskID := uint(1)
 	for _, stage := range e.Pipeline.Stages {
-		e.Tracker.Status("------ Performing Stage: " + stage.Name)
+		e.Tracker.Info("------ Performing Stage: " + stage.Name)
 
 		// execute tasks in pipeline
 		for _, task := range stage.Tasks {
-			e.Tracker.Status("--- Executing Task " + strconv.Itoa(int(taskID)) + ": " + task.Service + " (" + task.Name + ")")
-			e.Tracker.TrackTask(taskID)
+			e.Tracker.Info("--- Executing Task " + strconv.Itoa(int(taskID)) + ": " + task.Service + " (" + task.Name + ")")
 
 			// TODO: put this logic in seperate objects
 			// check "when" condition
@@ -78,7 +77,7 @@ func (e *ExecutionContext) Run() error {
 					return err
 				}
 				if res != "true" {
-					e.Tracker.Status("`when` condition not met, skipping task")
+					e.Tracker.Info("`when` condition not met, skipping task")
 					taskID++
 					continue
 				}
@@ -117,24 +116,21 @@ func (e *ExecutionContext) Run() error {
 
 				// convert result into tengo objects and store it
 				if task.Register != "" {
-					fmt.Printf("%+v\n", result)
 					var v tengo.Object
 					var err error
 					if result.Error == nil {
 						v, err = tengo.FromInterface(map[string]interface{}{
-							"Success": result.Success,
-							"Output":  result.Output,
+							"success": result.Success,
+							"output":  result.Output,
 						})
 					} else {
 						v, err = tengo.FromInterface(map[string]interface{}{
-							"Success": result.Success,
-							"Error":   result.Error,
-							"Output":  result.Output,
+							"success": result.Success,
+							"error":   result.Error,
+							"output":  result.Output,
 						})
 					}
 					if err != nil {
-						fmt.Printf("%+v\n", e.variables)
-						fmt.Println(err)
 						e.variables[task.Register] = &tengo.ObjectPtr{}
 					} else {
 						e.variables[task.Register] = v
@@ -184,7 +180,7 @@ func (e *ExecutionContext) Run() error {
 			*/
 
 			// if this task doesnt support tracking we just increase it to 100%
-			e.Tracker.TrackProgress(100)
+			e.Tracker.Progress(100)
 			taskID++
 		}
 	}

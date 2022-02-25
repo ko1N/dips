@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/inconshreveable/log15"
+
 	"github.com/ko1N/dips/pkg/dipscl"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 	"github.com/ko1N/dips/pkg/taskstorage"
 )
 
@@ -71,15 +74,13 @@ func main() {
 
 func ffprobeHandler(conf *FFmpegConfig) func(*dipscl.TaskContext) (map[string]interface{}, error) {
 	return func(task *dipscl.TaskContext) (map[string]interface{}, error) {
-		/*
-			tracker := tracking.CreateJobTracker(&tracking.JobTrackerConfig{
-				Logger: log.New("cmd", "worker"), // TODO: dep injection
-				Client: job.Client,
-				JobId:  job.Request.Job.Id.Hex(),
-			})
-		*/
-		// TODO: CreateTaskTracker
-		fmt.Printf("handling 'ffprobe' task %s: %s\n", task.Request.Name, task.Request.Params)
+		fmt.Printf("%+v\n", task.Request)
+
+		tracker := tracking.CreateTaskTracker(
+			log.New("cmd", "ffmpeg"),
+			task.Client,
+			task.Request.Job.Id.Hex(),
+			task.Request.TaskID)
 
 		// input video
 		source := task.Request.Params["source"]
@@ -98,20 +99,20 @@ func ffprobeHandler(conf *FFmpegConfig) func(*dipscl.TaskContext) (map[string]in
 		}
 
 		// ffprobe
-		probe, err := executeFFmpegProbe(task, conf, url.FilePath)
+		probe, err := executeFFmpegProbe(task, conf, &tracker, url.FilePath)
 		if err != nil {
 			return nil, fmt.Errorf("ffprobe failed: %s", err.Error())
 		}
 
-		//ctx.Tracker.Info("ffmpeg-probe successful")
+		tracker.Info("ffmpeg-probe successful")
 		return map[string]interface{}{
 			"probe": probe,
 		}, nil
 	}
 }
 
-func executeFFmpegProbe(task *dipscl.TaskContext, conf *FFmpegConfig, filename string) (map[string]interface{}, error) {
-	//ctx.Tracker.Info("probing input file", "filename", filename)
+func executeFFmpegProbe(task *dipscl.TaskContext, conf *FFmpegConfig, tracker *tracking.JobTracker, filename string) (map[string]interface{}, error) {
+	tracker.Info("probing input file: %s", filename)
 
 	// probe inputs
 	executable := "ffprobe"
@@ -124,21 +125,21 @@ func executeFFmpegProbe(task *dipscl.TaskContext, conf *FFmpegConfig, filename s
 		cmdline[0], append(cmdline[1:], []string{"-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", filename}...),
 		func(outmsg string) {
 			// TODO: detect true ffmpeg errors
-			//ctx.Tracker.Info(outmsg, "stream", "stdout")
+			tracker.StdOut(outmsg)
 		},
 		func(errmsg string) {
 			// TODO: detect true ffmpeg errors
-			//ctx.Tracker.Info(errmsg, "stream", "stderr")
+			tracker.StdErr(errmsg)
 		})
 	if err != nil {
-		//ctx.Tracker.Crit("unable to execute ffprobe", "error", err)
+		tracker.Crit("unable to execute ffprobe", "error", err)
 		return nil, err
 	}
 
 	var probe interface{}
 	err = json.Unmarshal([]byte(probeResult.StdOut), &probe)
 	if err != nil {
-		//ctx.Tracker.Crit("unable to unmarshal ffprobe result")
+		tracker.Crit("unable to unmarshal ffprobe result")
 		return nil, err
 	}
 

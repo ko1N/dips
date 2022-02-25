@@ -53,15 +53,11 @@ func main() {
 // TODO: send status updates containing raw cmd exec log
 func handleJob(job *dipscl.JobContext) error {
 	// create logging instance for this pipeline
-	tracker := tracking.CreateJobTracker(&tracking.JobTrackerConfig{
-		Logger: log.New("cmd", "worker"), // TODO: dep injection
-		Client: job.Client,
-		JobId:  job.Request.Job.Id.Hex(),
-	})
+	tracker := tracking.CreateJobTracker(log.New("cmd", "worker"), job.Client, job.Request.Job.Id.Hex())
 
 	pi, err := pipeline.CreateFromBytes(job.Request.Job.Pipeline.Script)
 	if err != nil {
-		tracker.Logger().Crit("unable to create pipeline from bytes", "error", err)
+		tracker.Crit("unable to create pipeline from bytes", "error", err)
 		return errors.New("Unable to create pipeline from bytes")
 	}
 
@@ -75,6 +71,7 @@ func handleJob(job *dipscl.JobContext) error {
 				result, err := job.Client.
 					NewTask(task.Service).
 					Name(task.Name).
+					Job(job.Request.Job).
 					Timeout(10 * time.Second).
 					Parameters(input).
 					Dispatch().
@@ -98,7 +95,7 @@ func handleJob(job *dipscl.JobContext) error {
 	// run execution
 	err = exec.Run()
 	if err != nil {
-		tracker.Logger().Crit("error while executing pipeline", "error", err)
+		tracker.Crit("error while executing pipeline", "error", err)
 	}
 
 	return nil

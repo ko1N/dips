@@ -24,7 +24,7 @@ const (
 
 type StatusEvent struct {
 	JobId    string
-	TaskIdx  uint
+	TaskId   string
 	Type     StatusEventType
 	Progress uint
 	//JobStatus string // TODO: enum
@@ -34,16 +34,19 @@ type StatusEvent struct {
 type MessageEventType uint
 
 const (
-	StatusMessage MessageEventType = 0
-	ErrorMessage  MessageEventType = 1
-	StdInMessage  MessageEventType = 2
-	StdOutMessage MessageEventType = 3
-	StdErrMessage MessageEventType = 4
+	LogDebugMessage MessageEventType = 0
+	LogInfoMessage  MessageEventType = 1
+	LogWarnMessage  MessageEventType = 2
+	LogErrorMessage MessageEventType = 3
+	LogCritMessage  MessageEventType = 4
+
+	StdOutMessage MessageEventType = 10
+	StdErrMessage MessageEventType = 11
 )
 
 type MessageEvent struct {
 	JobId   string
-	TaskIdx uint
+	TaskId  string
 	Type    MessageEventType
 	Message string
 }

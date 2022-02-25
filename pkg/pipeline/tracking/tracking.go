@@ -1,129 +1,117 @@
 package tracking
 
 import (
+	"fmt"
+
 	log "github.com/inconshreveable/log15"
 	"github.com/ko1N/dips/pkg/dipscl"
 	"github.com/mattn/go-colorable"
 )
 
-// TODO: add timestamp for log/stdout/etc
-
-// JobTrackerConfig - config for a job tracker instance
-type JobTrackerConfig struct {
-	Logger log.Logger
-	Client *dipscl.Client
-	JobId  string
-}
-
-// JobTracker - tracks job status, progress and logs
+// Tracks job status, progress and logs
 type JobTracker struct {
-	config  JobTrackerConfig
-	jobLog  log.Logger
-	taskIdx uint
+	logger log.Logger
+	client *dipscl.Client
+	jobId  string
+	taskId string
 }
 
-// CreateJobTracker - creates a new job tracking instance
-func CreateJobTracker(conf *JobTrackerConfig) JobTracker {
-	jobLog := conf.Logger.New("job", conf.JobId)
-	jobLog.SetHandler(log.MultiHandler(
+// Creates a new job tracking instance
+func CreateJobTracker(logger log.Logger, cl *dipscl.Client, jobId string) JobTracker {
+	l := logger.New("job", jobId)
+	l.SetHandler(log.MultiHandler(
 		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
-		log.FuncHandler(func(r *log.Record) error {
-			if conf.Client == nil {
-				return nil
-			}
-			conf.Client.NewEvent().
-				Message(&dipscl.MessageEvent{
-					JobId:   conf.JobId,
-					TaskIdx: 0,
-					Type:    dipscl.StatusMessage,
-					Message: r.Msg,
-				}).
-				Dispatch()
-			return nil
-		}),
 	))
 
 	tracker := JobTracker{
-		config:  *conf,
-		jobLog:  jobLog,
-		taskIdx: 0,
+		logger: l,
+		client: cl,
+		jobId:  jobId,
+		taskId: "",
 	}
-	tracker.Logger().Info("tracker for job `" + conf.JobId + "` created")
-
+	tracker.Info("tracker for job `" + jobId + "` created")
 	return tracker
 }
 
-// TODO: DEPRECATED - RemoveMe
-// Logger - retruns the jobs logging instance
-func (t *JobTracker) Logger() log.Logger {
-	return t.jobLog
+// Creates a new task tracking instance
+func CreateTaskTracker(logger log.Logger, cl *dipscl.Client, jobId string, taskId string) JobTracker {
+	l := logger.New("job", jobId, "task", taskId)
+	l.SetHandler(log.MultiHandler(
+		log.StreamHandler(colorable.NewColorableStdout(), log.TerminalFormat()),
+	))
+
+	tracker := JobTracker{
+		logger: l,
+		client: cl,
+		jobId:  jobId,
+		taskId: taskId,
+	}
+	tracker.Info("tracker for task `" + taskId + "` created")
+	return tracker
 }
 
-// TrackTask - tracks a task change
-func (t *JobTracker) TrackTask(taskIdx uint) {
-	t.taskIdx = taskIdx
-}
-
-// TrackProgress - tracks progress of the current task
-func (t *JobTracker) TrackProgress(progress uint) {
-	if t.config.Client == nil {
+// Tracks progress of the current task
+func (t *JobTracker) Progress(progress uint) {
+	if t.client == nil {
 		return
 	}
-	t.config.Client.NewEvent().
+	t.client.NewEvent().
 		Status(&dipscl.StatusEvent{
-			JobId:    t.config.JobId,
-			TaskIdx:  t.taskIdx,
+			JobId:    t.jobId,
+			TaskId:   t.taskId,
 			Type:     dipscl.ProgressEvent,
 			Progress: progress,
 		}).
 		Dispatch()
 }
 
-// Message - tracks messages of the current task
-func (t *JobTracker) Message(mt dipscl.MessageEventType, msg string) {
-	if t.config.Client == nil || msg == "" {
+func (t *JobTracker) log(ty dipscl.MessageEventType, msg string) {
+	if t.client == nil || msg == "" {
 		// do not persist empty messages
 		return
 	}
 
-	//fmt.Printf("task %d stderr: %s\n", t.taskID, errmsg)
-	t.config.Client.NewEvent().
+	t.client.NewEvent().
 		Message(&dipscl.MessageEvent{
-			JobId:   t.config.JobId,
-			TaskIdx: t.taskIdx,
-			Type:    mt,
+			JobId:   t.jobId,
+			TaskId:  t.taskId,
+			Type:    ty,
 			Message: msg,
 		}).
 		Dispatch()
 }
 
-// Status - tracks a status message
-func (t *JobTracker) Status(msg string) {
-	t.Logger().Info(msg)
-	t.Message(dipscl.StatusMessage, msg)
+func (t *JobTracker) Debug(msg string, ctx ...interface{}) {
+	t.logger.Debug(msg, ctx...)
+	t.log(dipscl.LogDebugMessage, fmt.Sprintf(msg, ctx...))
 }
 
-func (t *JobTracker) Error(msg string, err error) {
-	if err != nil {
-		t.Logger().Crit(msg, "error", err)
-		t.Message(dipscl.ErrorMessage, msg+" ("+err.Error()+")")
-	} else {
-		t.Logger().Crit(msg)
-		t.Message(dipscl.ErrorMessage, msg)
-	}
+func (t *JobTracker) Info(msg string, ctx ...interface{}) {
+	t.logger.Info(msg, ctx...)
+	t.log(dipscl.LogInfoMessage, fmt.Sprintf(msg, ctx...))
 }
 
-// StdIn - tracks a stdin message
-func (t *JobTracker) StdIn(msg string) {
-	t.Message(dipscl.StdInMessage, msg)
+func (t *JobTracker) Warn(msg string, ctx ...interface{}) {
+	t.logger.Warn(msg, ctx...)
+	t.log(dipscl.LogWarnMessage, fmt.Sprintf(msg, ctx...))
 }
 
-// StdOut - tracks a stdin message
-func (t *JobTracker) StdOut(msg string) {
-	t.Message(dipscl.StdOutMessage, msg)
+func (t *JobTracker) Error(msg string, ctx ...interface{}) {
+	t.logger.Error(msg, ctx...)
+	t.log(dipscl.LogErrorMessage, fmt.Sprintf(msg, ctx...))
 }
 
-// StdErr - tracks a stdin message
-func (t *JobTracker) StdErr(msg string) {
-	t.Message(dipscl.StdErrMessage, msg)
+func (t *JobTracker) Crit(msg string, ctx ...interface{}) {
+	t.logger.Crit(msg, ctx...)
+	t.log(dipscl.LogCritMessage, fmt.Sprintf(msg, ctx...))
+}
+
+func (t *JobTracker) StdOut(msg string, ctx ...interface{}) {
+	fmt.Println(msg)
+	t.log(dipscl.StdOutMessage, fmt.Sprintf(msg, ctx...))
+}
+
+func (t *JobTracker) StdErr(msg string, ctx ...interface{}) {
+	fmt.Println(msg)
+	t.log(dipscl.StdErrMessage, fmt.Sprintf(msg, ctx...))
 }
