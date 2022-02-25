@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -97,7 +96,6 @@ func (e *ExecutionContext) Run() error {
 					}))
 					if err != nil {
 						e.Tracker.Error("error parsing task input", err)
-						fmt.Printf("%+v\n", e.variables)
 						return err
 					}
 				}

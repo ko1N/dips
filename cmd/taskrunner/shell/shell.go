@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/inconshreveable/log15"
+
 	"github.com/ko1N/dips/pkg/dipscl"
+	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
 func main() {
@@ -29,7 +32,11 @@ func main() {
 }
 
 func shellHandler(task *dipscl.TaskContext) (map[string]interface{}, error) {
-	fmt.Printf("handling 'shell' task %s: %s\n", task.Request.Name, task.Request.Params)
+	tracker := tracking.CreateTaskTracker(
+		log.New("cmd", "shell"),
+		task.Client,
+		task.Request.Job.Id.Hex(),
+		task.Request.TaskID)
 
 	executable := task.Request.Params["cmd"]
 	cmdline := strings.Split(executable, " ")
@@ -37,15 +44,13 @@ func shellHandler(task *dipscl.TaskContext) (map[string]interface{}, error) {
 	res, err := task.Environment.Execute(
 		cmdline[0], append(cmdline[1:], []string{}...),
 		func(outmsg string) {
-			//ctx.Tracker.Info(outmsg, "stream", "stdout")
-			fmt.Printf("stdout: %s\n", outmsg)
+			tracker.StdOut(outmsg)
 		},
 		func(errmsg string) {
-			//ctx.Tracker.Info(errmsg, "stream", "stderr")
-			fmt.Printf("stderr: %s\n", errmsg)
+			tracker.StdErr(errmsg)
 		})
 	if err != nil {
-		//ctx.Tracker.Crit("unable to execute video2x", "error", err)
+		tracker.Crit("unable to execute shell command: %s", err)
 		return nil, err
 	}
 

@@ -74,8 +74,6 @@ func main() {
 
 func ffprobeHandler(conf *FFmpegConfig) func(*dipscl.TaskContext) (map[string]interface{}, error) {
 	return func(task *dipscl.TaskContext) (map[string]interface{}, error) {
-		fmt.Printf("%+v\n", task.Request)
-
 		tracker := tracking.CreateTaskTracker(
 			log.New("cmd", "ffmpeg"),
 			task.Client,
@@ -132,7 +130,7 @@ func executeFFmpegProbe(task *dipscl.TaskContext, conf *FFmpegConfig, tracker *t
 			tracker.StdErr(errmsg)
 		})
 	if err != nil {
-		tracker.Crit("unable to execute ffprobe", "error", err)
+		tracker.Crit("unable to execute ffprobe: %s", err)
 		return nil, err
 	}
 
