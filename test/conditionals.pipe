@@ -7,18 +7,25 @@ parameters:
 
 stages:
 - stage: testing conditional execution
-  environment: docker/alpine:latest
   tasks:
 
   - name: try execute /usr/bin/foo
-    shell: /usr/bin/foo
+    service: shell
+    input: /usr/bin/foo
     register: foo_result
     ignore_errors: "true"
 
-  - shell: "echo {{ foo_result.rc }}"
+  - service: shell
+    input: "echo {{ foo_result.rc }}"
 
-  - shell: /usr/bin/bar
+  - service: shell
+    input: /usr/bin/bar
     when: foo_result.rc == 5
 
-  - shell: /usr/bin/bar
+  - service: shell
+    input: uname -a
     when: foo_result.rc != 0
+    register: uname_result
+
+  - service: shell
+    input: "echo {{ uname_result.stdout }}"

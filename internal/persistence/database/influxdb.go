@@ -14,7 +14,7 @@ type InfluxDBConfig struct {
 }
 
 // InfluxDBConnect - opens a connection to influxdb and returns the connection object
-func InfluxDBConnect(conf InfluxDBConfig) (client.Client, error) {
+func InfluxDBConnect(conf *InfluxDBConfig) (client.Client, error) {
 	cl, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr:     conf.Host,
 		Username: conf.Username,

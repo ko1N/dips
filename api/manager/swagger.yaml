@@ -11,7 +11,6 @@ definitions:
     properties:
       job:
         $ref: '#/definitions/model.Job'
-        type: object
       messages:
         items:
           $ref: '#/definitions/messages.Message'
@@ -28,7 +27,6 @@ definitions:
     properties:
       pipeline:
         $ref: '#/definitions/model.Pipeline'
-        type: object
       status:
         type: string
     type: object
@@ -36,16 +34,19 @@ definitions:
     properties:
       pipeline:
         $ref: '#/definitions/model.Pipeline'
-        type: object
     type: object
   manager.PipelineExecuteRequest:
     properties:
       name:
         type: string
-      parameters:
-        items:
-          $ref: '#/definitions/model.JobParameter'
-        type: array
+      variables:
+        additionalProperties: true
+        type: object
+    type: object
+  manager.PipelineExecuteResponse:
+    properties:
+      job:
+        $ref: '#/definitions/model.Job'
     type: object
   manager.PipelineListResponse:
     properties:
@@ -66,140 +67,32 @@ definitions:
       type:
         type: integer
     type: object
-  mgo.Collection:
-    properties:
-      database:
-        $ref: '#/definitions/mgo.Database'
-        type: object
-      fullName:
-        description: '"db.collection"'
-        type: string
-      name:
-        description: '"collection"'
-        type: string
-    type: object
-  mgo.Database:
-    properties:
-      name:
-        type: string
-      session:
-        $ref: '#/definitions/mgo.Session'
-        type: object
-    type: object
-  mgo.Session:
-    type: object
   model.Job:
     properties:
-      createdAt:
-        type: string
       id:
         type: string
       name:
         type: string
-      parameters:
-        items:
-          $ref: '#/definitions/model.JobParameter'
-        type: array
       pipeline:
         $ref: '#/definitions/model.Pipeline'
+      variables:
+        additionalProperties: true
         type: object
-      updatedAt:
-        type: string
-    type: object
-  model.JobParameter:
-    properties:
-      name:
-        type: string
-      value:
-        type: string
     type: object
   model.Pipeline:
     properties:
-      createdAt:
-        type: string
       id:
         type: string
       name:
         type: string
-      pipeline:
-        $ref: '#/definitions/pipeline.Pipeline'
-        type: object
       revision:
         type: integer
       script:
         type: string
-      updatedAt:
-        type: string
-    type: object
-  pipeline.Command:
-    properties:
-      lines:
-        items:
-          type: string
-        type: array
-      name:
-        type: string
-    type: object
-  pipeline.Expression:
-    properties:
-      script:
-        type: string
-    type: object
-  pipeline.Parameter:
-    properties:
-      name:
-        type: string
-    type: object
-  pipeline.Pipeline:
-    properties:
-      name:
-        type: string
-      parameters:
-        items:
-          $ref: '#/definitions/pipeline.Parameter'
-        type: array
-      stages:
-        items:
-          $ref: '#/definitions/pipeline.Stage'
-        type: array
-    type: object
-  pipeline.Stage:
-    properties:
-      environment:
-        type: string
-      name:
-        type: string
-      tasks:
-        items:
-          $ref: '#/definitions/pipeline.Task'
-        type: array
-    type: object
-  pipeline.Task:
-    properties:
-      command:
-        items:
-          $ref: '#/definitions/pipeline.Command'
-        type: array
-      ignore_errors:
-        type: boolean
-      name:
-        type: string
-      notify:
-        description: NotifyRef
-        items:
-          type: string
-        type: array
-      register:
-        description: VariableRef
-        type: string
-      when:
-        $ref: '#/definitions/pipeline.Expression'
-        type: object
     type: object
 info:
   contact: {}
   description: dips manager api
-  license: {}
   title: dips
   version: "0.1"
 paths:
@@ -393,7 +286,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/manager.SuccessResponse'
+            $ref: '#/definitions/manager.PipelineExecuteResponse'
         "400":
           description: Bad Request
           schema:

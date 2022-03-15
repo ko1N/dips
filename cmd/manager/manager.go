@@ -17,6 +17,7 @@ import (
 	"github.com/ko1N/dips/internal/persistence/database"
 	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/ko1N/dips/internal/rest/manager"
+	"github.com/ko1N/dips/pkg/dipscl"
 )
 
 // @title dips
@@ -28,14 +29,10 @@ import (
 // generate swagger docs
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
-// generate crud wrappers
-//go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Pipeline -output  ../../internal/persistence/database/crud/pipeline.go
-//go:generate go run ../../internal/persistence/database/crud/generate_crud.go -type=model.Job -output  ../../internal/persistence/database/crud/job.go
-
 type config struct {
+	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
 	MongoDB  database.MongoDBConfig  `json:"mongodb" toml:"mongodb"`
 	InfluxDB database.InfluxDBConfig `json:"influxdb" toml:"influxdb"`
-	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
 }
 
 func main() {
@@ -52,8 +49,14 @@ func main() {
 		return
 	}
 
+	// setup dips client
+	dipscl, err := dipscl.NewClient(conf.AMQP.Host)
+	if err != nil {
+		panic(err)
+	}
+
 	// setup database
-	mongodb, err := database.MongoDBConnect(conf.MongoDB)
+	mongo, err := database.MongoDBConnect(&conf.MongoDB)
 	if err != nil {
 		srvlog.Crit("Could not connect to mongodb instances", "error", err)
 		return
@@ -61,7 +64,7 @@ func main() {
 
 	// setup messages
 	// setup logging
-	influxdb, err := database.InfluxDBConnect(conf.InfluxDB)
+	influxdb, err := database.InfluxDBConnect(&conf.InfluxDB)
 	if err != nil {
 		srvlog.Crit("Could not connect to influxdb instance", "error", err)
 		return
@@ -85,12 +88,7 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	err = manager.CreateManagerAPI(manager.ManagerAPIConfig{
-		Gin:            r,
-		AMQP:           conf.AMQP,
-		MongoDB:        mongodb,
-		MessageHandler: messageHandler, // TODO: let managerAPI create its own db connections
-	})
+	_, err = manager.CreateManagerAPI(r, dipscl, mongo, messageHandler)
 	if err != nil {
 		srvlog.Crit("Unable to create Manager API", "error", err)
 		return

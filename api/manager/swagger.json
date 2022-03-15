@@ -4,7 +4,6 @@
         "description": "dips manager api",
         "title": "dips",
         "contact": {},
-        "license": {},
         "version": "0.1"
     },
     "basePath": "/",
@@ -212,7 +211,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/manager.SuccessResponse"
+                            "$ref": "#/definitions/manager.PipelineExecuteResponse"
                         }
                     },
                     "400": {
@@ -323,7 +322,6 @@
             "type": "object",
             "properties": {
                 "job": {
-                    "type": "object",
                     "$ref": "#/definitions/model.Job"
                 },
                 "messages": {
@@ -349,7 +347,6 @@
             "type": "object",
             "properties": {
                 "pipeline": {
-                    "type": "object",
                     "$ref": "#/definitions/model.Pipeline"
                 },
                 "status": {
@@ -361,7 +358,6 @@
             "type": "object",
             "properties": {
                 "pipeline": {
-                    "type": "object",
                     "$ref": "#/definitions/model.Pipeline"
                 }
             }
@@ -372,11 +368,17 @@
                 "name": {
                     "type": "string"
                 },
-                "parameters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.JobParameter"
-                    }
+                "variables": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "manager.PipelineExecuteResponse": {
+            "type": "object",
+            "properties": {
+                "job": {
+                    "$ref": "#/definitions/model.Job"
                 }
             }
         },
@@ -410,199 +412,38 @@
                 }
             }
         },
-        "mgo.Collection": {
-            "type": "object",
-            "properties": {
-                "database": {
-                    "type": "object",
-                    "$ref": "#/definitions/mgo.Database"
-                },
-                "fullName": {
-                    "description": "\"db.collection\"",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "\"collection\"",
-                    "type": "string"
-                }
-            }
-        },
-        "mgo.Database": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "session": {
-                    "type": "object",
-                    "$ref": "#/definitions/mgo.Session"
-                }
-            }
-        },
-        "mgo.Session": {
-            "type": "object"
-        },
         "model.Job": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "parameters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.JobParameter"
-                    }
-                },
                 "pipeline": {
-                    "type": "object",
                     "$ref": "#/definitions/model.Pipeline"
                 },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.JobParameter": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
+                "variables": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },
         "model.Pipeline": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "pipeline": {
-                    "type": "object",
-                    "$ref": "#/definitions/pipeline.Pipeline"
-                },
                 "revision": {
                     "type": "integer"
                 },
                 "script": {
                     "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "pipeline.Command": {
-            "type": "object",
-            "properties": {
-                "lines": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "pipeline.Expression": {
-            "type": "object",
-            "properties": {
-                "script": {
-                    "type": "string"
-                }
-            }
-        },
-        "pipeline.Parameter": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "pipeline.Pipeline": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "parameters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pipeline.Parameter"
-                    }
-                },
-                "stages": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pipeline.Stage"
-                    }
-                }
-            }
-        },
-        "pipeline.Stage": {
-            "type": "object",
-            "properties": {
-                "environment": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pipeline.Task"
-                    }
-                }
-            }
-        },
-        "pipeline.Task": {
-            "type": "object",
-            "properties": {
-                "command": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pipeline.Command"
-                    }
-                },
-                "ignore_errors": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "notify": {
-                    "description": "NotifyRef",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "register": {
-                    "description": "VariableRef",
-                    "type": "string"
-                },
-                "when": {
-                    "type": "object",
-                    "$ref": "#/definitions/pipeline.Expression"
                 }
             }
         }

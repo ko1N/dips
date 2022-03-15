@@ -7,7 +7,6 @@ import (
 	log "github.com/inconshreveable/log15"
 
 	"github.com/ko1N/dips/pkg/pipeline"
-	"github.com/ko1N/dips/pkg/pipeline/modules"
 	"github.com/ko1N/dips/pkg/pipeline/tracking"
 )
 
@@ -18,19 +17,11 @@ func main() {
 	// setup engine
 	srvlog := log.New("cmd", "worker")
 
-	// TODO: should the logger be inside engine?
-	engine := pipeline.CreateEngine()
-	engine.
-		RegisterExtension(&modules.Shell{}).
-		RegisterExtension(&modules.WGet{}).
-		RegisterExtension(&modules.FFMpeg{})
-
 	// create logging instance for this pipeline
 	tracker := tracking.CreateJobTracker(tracking.JobTrackerConfig{
-		Logger:          srvlog,
-		ProgressChannel: nil,
-		MessageChannel:  nil,
-		JobID:           "manual",
+		Logger: srvlog,
+		Client: nil,
+		JobID:  "manual",
 	})
 
 	// parse pipeline
@@ -45,9 +36,9 @@ func main() {
 	}
 
 	// execute pipeline on engine
-	exec := engine.CreateExecution(
+	exec := pipeline.NewExecutionContext(
 		"manual",
-		&pi,
+		pi,
 		tracker)
 	err = exec.Run()
 	if err != nil {

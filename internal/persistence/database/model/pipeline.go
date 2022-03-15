@@ -1,19 +1,15 @@
 package model
 
-import (
-	"github.com/ko1N/dips/pkg/pipeline"
-	"github.com/zebresel-com/mongodm"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 // TODO: properties struct
 // TODO: task struct should contain all necessary infos + unique ids
 
 // Pipeline - Database struct describing a pipeline
 type Pipeline struct {
-	mongodm.DocumentBase `json:",inline" bson:",inline"`
-	Script               string             `json:"script" bson:"script" required:"true"`
-	Revision             uint               `json:"revision" bson:"revision"`
-	Name                 string             `json:"name" bson:"name" required:"true"`
-	Pipeline             *pipeline.Pipeline `json:"pipeline" bson:"pipeline"`
+	Id       *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Revision uint                `json:"revision" bson:"revision"`
+	Name     string              `json:"name" bson:"name" required:"true"`
+	Script   string              `json:"script" bson:"script"`
 	// TODO: properties
 }

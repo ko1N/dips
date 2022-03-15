@@ -1,0 +1,16 @@
+---
+name: service test
+
+parameters:
+  - binary_first
+
+stages:
+- stage: testing conditional execution
+  tasks:
+
+  - name: testing service
+    service: shell
+    input:
+      command: "echo {{ foo_result.rc }}"
+    register: foo_result
+    ignore_errors: "true"

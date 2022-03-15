@@ -1,14 +1,16 @@
+[amqp]
+host="rabbitmq:rabbitmq@localhost"
+
 [mongodb]
-hosts=["localhost"]
-database="dips"
+hosts=["mongodb://localhost:27017"]
+auth_mechanism="SCRAM-SHA-256"
+auth_source="dips"
 username="dips"
 password="dips"
+database="dips"
 
 [influxdb]
 host="http://localhost:8086"
 database="dips"
 username="dips"
 password="dips"
-
-[amqp]
-host="rabbitmq:rabbitmq@localhost"

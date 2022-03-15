@@ -1,17 +1,19 @@
 package manager
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ko1N/dips/internal/persistence/database/model"
 	"github.com/ko1N/dips/internal/persistence/messages"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2/bson"
 )
 
 // JobListResponse - response with a list of jobs
 type JobListResponse struct {
-	Jobs []*model.Job `json:"jobs"`
+	Jobs []model.Job `json:"jobs"`
 }
 
 // JobList - lists all jobs
@@ -23,12 +25,41 @@ type JobListResponse struct {
 // @Success 200 {object} JobListResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/job/all [get]
-func JobList(c *gin.Context) {
+func (a *ManagerAPI) JobList(c *gin.Context) {
 	// TODO: pagination
-	jobList := []*model.Job{}
-	err := jobs.FindJobsQuery(bson.M{"deleted": false}).
-		Select(bson.M{"name": true}).
-		Exec(&jobList)
+	// TODO: filter just name
+	jobList := []model.Job{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	cur, err := a.mongo.Collection(colJobs).Find(ctx, bson.M{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "error fetching jobs",
+			Error:  err.Error(),
+		})
+		return
+	}
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		var job model.Job
+		err := cur.Decode(&job)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, FailureResponse{
+				Status: "error fetching jobs",
+				Error:  err.Error(),
+			})
+			return
+		}
+		jobList = append(jobList, job)
+	}
+	if err := cur.Err(); err != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "error fetching jobs",
+			Error:  err.Error(),
+		})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find pipelines",
@@ -57,7 +88,7 @@ type JobDetailsResponse struct {
 // @Success 200 {object} JobDetailsResponse
 // @Failure 400 {object} FailureResponse
 // @Router /manager/job/details/{job_id} [get]
-func JobDetails(c *gin.Context) {
+func (a *ManagerAPI) JobDetails(c *gin.Context) {
 	id := c.Param("job_id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, FailureResponse{
@@ -67,7 +98,21 @@ func JobDetails(c *gin.Context) {
 		return
 	}
 
-	job, err := jobs.FindJobByID(id)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+	oid, _ := primitive.ObjectIDFromHex(id)
+	fres := a.mongo.
+		Collection(colJobs).
+		FindOne(ctx, bson.M{"_id": oid})
+	if fres.Err() != nil {
+		c.JSON(http.StatusBadRequest, FailureResponse{
+			Status: "unable to find job with id " + id,
+			Error:  fres.Err().Error(),
+		})
+		return
+	}
+	var job model.Job
+	err := fres.Decode(&job)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, FailureResponse{
 			Status: "unable to find job with id " + id,
@@ -77,10 +122,10 @@ func JobDetails(c *gin.Context) {
 	}
 
 	// fetch job messages
-	messages := messageHandler.GetAll(id)
+	messages := a.messageHandler.GetAll(id)
 
 	c.JSON(http.StatusOK, JobDetailsResponse{
-		Job:      job,
+		Job:      &job,
 		Messages: messages,
 	})
 }

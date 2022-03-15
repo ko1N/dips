@@ -1,46 +1,42 @@
 package database
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"context"
+	"time"
 
-	"github.com/zebresel-com/mongodm"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // MongoDBConfig - config entry describing a database config
 type MongoDBConfig struct {
-	LanguageFile string   `json:"language_file" toml:"language_file"`
-	Language     string   `json:"language" toml:"language"`
-	Hosts        []string `json:"hosts" toml:"hosts"`
-	Database     string   `json:"database" toml:"database"`
-	Username     string   `json:"username" toml:"username"`
-	Password     string   `json:"password" toml:"password"`
+	Hosts         []string `json:"hosts" toml:"hosts"`
+	AuthMechanism string   `json:"auth_mechanism" toml:"auth_mechanism"`
+	AuthSource    string   `json:"auth_source" toml:"auth_source"`
+	Username      string   `json:"username" toml:"username"`
+	Password      string   `json:"password" toml:"password"`
+	Database      string   `json:"database" toml:"database"`
 }
 
 // MongoDBConnect - opens a connection to mongodb and returns the connection object
-func MongoDBConnect(conf MongoDBConfig) (*mongodm.Connection, error) {
-	// try parsing a locals file
-	var locals map[string]string
-	if conf.LanguageFile != "" && conf.Language != "" {
-		// TODO: find a decent opiniated path
-		if file, err := ioutil.ReadFile(conf.LanguageFile); err == nil {
-			var locale map[string]map[string]string
-			err = json.Unmarshal(file, &locale)
-			if err != nil {
-				return nil, err
-			}
+func MongoDBConnect(conf *MongoDBConfig) (*mongo.Database, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-			locals = locale[conf.Language]
-		}
+	credential := options.Credential{
+		AuthMechanism: conf.AuthMechanism,
+		AuthSource:    conf.AuthSource,
+		Username:      conf.Username,
+		Password:      conf.Password,
 	}
+	clientOpts := options.
+		Client().
+		ApplyURI(conf.Hosts[0]).
+		SetAuth(credential)
 
-	// connect to mongodb instance
-	dbConfig := &mongodm.Config{
-		DatabaseHosts:    conf.Hosts,
-		DatabaseName:     conf.Database,
-		DatabaseUser:     conf.Username,
-		DatabasePassword: conf.Password,
-		Locals:           locals,
+	mongo, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return nil, err
 	}
-	return mongodm.Connect(dbConfig)
+	return mongo.Database(conf.Database), nil
 }

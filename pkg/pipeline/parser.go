@@ -13,110 +13,75 @@ type Variable struct {
 	Value string `json:"value" bson:"value"`
 }
 
-// Parameter -
-type Parameter struct {
-	Name string `json:"name" bson:"name"`
-}
-
-// Command -
-type Command struct {
-	Name  string   `json:"name" bson:"name"`
-	Lines []string `json:"lines" bson:"lines"`
-}
-
 // Task -
 type Task struct {
-	Name         string     `json:"name" bson:"name"`
-	Command      []Command  `json:"command" bson:"command"`
-	IgnoreErrors bool       `json:"ignore_errors" bson:"ignore_errors"`
-	Register     string     `json:"register" bson:"register"` // VariableRef
-	Notify       []string   `json:"notify" bson:"notify"`     // NotifyRef
-	When         Expression `json:"when" bson:"when"`
+	Name         string                 `json:"name" bson:"name"`
+	Service      string                 `json:"service" bson:"service"`
+	Parameters   map[string]interface{} `json:"input" bson:"input"`
+	IgnoreErrors bool                   `json:"ignore_errors" bson:"ignore_errors"`
+	Register     string                 `json:"register" bson:"register"`
+	Notify       []string               `json:"notify" bson:"notify"` // NotifyRef
+	When         Expression             `json:"when" bson:"when"`
 }
 
 // Stage -
 type Stage struct {
-	Name        string `json:"name" bson:"name"`
-	Environment string `json:"environment" bson:"environment"`
-	Tasks       []Task `json:"tasks" bson:"tasks"`
+	Name  string `json:"name" bson:"name"`
+	Tasks []Task `json:"tasks" bson:"tasks"`
 	//Variables   []Variable `json:"variables" bson:"variables"`
 }
 
 // Pipeline -
 type Pipeline struct {
-	Name       string      `json:"name" bson:"name"`
-	Parameters []Parameter `json:"parameters" bson:"parameters"`
-	Stages     []Stage     `json:"stages" bson:"stages"`
+	Name   string  `json:"name" bson:"name"`
+	Stages []Stage `json:"stages" bson:"stages"`
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
-func CreateFromBytes(data []byte) (Pipeline, error) {
+func CreateFromBytes(data string) (*Pipeline, error) {
 	// TODO: multifile pipelines
 	if !strings.HasPrefix(string(data), "---\n") {
-		return Pipeline{}, errors.New("Not a valid pipeline script. should start with `---`")
+		return nil, errors.New("Not a valid pipeline script. should start with `---`")
 	}
 
 	var script interface{}
-	err := yaml.Unmarshal(data, &script)
+	err := yaml.Unmarshal([]byte(data), &script)
 	if err != nil {
-		return Pipeline{}, err
+		return nil, err
 	}
 
 	if s, ok := script.(map[interface{}]interface{}); ok {
 		return parsePipeline(s)
 	}
 
-	return Pipeline{}, errors.New("Not a valid pipeline script. Script should start with `name:` or `stages:`")
+	return nil, errors.New("Not a valid pipeline script. Script should start with `name:` or `stages:`")
 }
 
-func parsePipeline(script map[interface{}]interface{}) (Pipeline, error) {
+func parsePipeline(script map[interface{}]interface{}) (*Pipeline, error) {
 	result := Pipeline{}
 
 	if name, ok := script["name"]; ok {
 		result.Name = name.(string)
 	}
 
-	var err error
-	result.Parameters, err = parseParameters(script)
-	if err != nil {
-		return result, err
-	}
-
 	if stages, ok := script["stages"]; ok {
 		for _, s := range stages.([]interface{}) {
 			stage, err := parseStage(s.(map[interface{}]interface{}))
 			if err != nil {
-				return result, err
+				return nil, err
 			}
 			result.Stages = append(result.Stages, stage)
 		}
 	}
 
-	return result, nil
-}
-
-func parseParameters(script map[interface{}]interface{}) ([]Parameter, error) {
-	var result []Parameter
-	if params, ok := script["parameters"]; ok {
-		for _, value := range params.([]interface{}) {
-			result = append(result, Parameter{
-				Name: value.(string),
-			})
-		}
-	}
-	return result, nil
+	return &result, nil
 }
 
 func parseStage(script map[interface{}]interface{}) (Stage, error) {
 	if stage, ok := script["stage"]; ok {
 		//fmt.Println("Parsing stage" + stage.(string))
 		result := Stage{
-			Name:        stage.(string),
-			Environment: "native",
-		}
-
-		if env, ok := script["environment"]; ok {
-			result.Environment = env.(string)
+			Name: stage.(string),
 		}
 
 		var err error
@@ -141,19 +106,40 @@ func parseTasks(script map[interface{}]interface{}) ([]Task, error) {
 			if err != nil {
 				return result, err
 			}
-			result = append(result, _task)
+			result = append(result, *_task)
 		}
 	}
 	return result, nil
 }
 
-func parseTask(script map[interface{}]interface{}) (Task, error) {
-	result := Task{}
+func parseTask(script map[interface{}]interface{}) (*Task, error) {
+	result := &Task{}
 
 	for key, value := range script {
 		switch key.(string) {
 		case "name":
 			result.Name = value.(string)
+			break
+
+		case "service":
+			if v, ok := value.(string); ok {
+				result.Service = v
+			} else if v, ok := value.(map[interface{}]interface{}); ok {
+				params := make(map[string]interface{})
+				for k, v := range v {
+					if k.(string) == "name" {
+						result.Service = v.(string)
+					} else {
+						params[k.(string)] = v
+					}
+				}
+				if result.Service == "" {
+					return nil, errors.New("Invalid syntax when parsing \"service\", missing \"name\"")
+				}
+				result.Parameters = params
+			} else {
+				return nil, errors.New("Invalid syntax when parsing \"service\"")
+			}
 			break
 
 		case "ignore_errors":
@@ -172,11 +158,11 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 					if str, ok := val.(string); ok {
 						result.Notify = append(result.Notify, str)
 					} else {
-						return result, errors.New("Invalid syntax when parsing \"notify\". Should be a string or a list of strings")
+						return nil, errors.New("Invalid syntax when parsing \"notify\". Should be a string or a list of strings")
 					}
 				}
 			} else {
-				return result, errors.New("Invalid syntax when parsing \"notify\"")
+				return nil, errors.New("Invalid syntax when parsing \"notify\"")
 			}
 			break
 
@@ -187,38 +173,14 @@ func parseTask(script map[interface{}]interface{}) (Task, error) {
 			break
 
 		default:
-			cmd, err := parseCommand(key.(string), value)
-			if err != nil {
-				return result, err
-			}
-			result.Command = append(result.Command, cmd)
 			break
 		}
 	}
 
-	return result, nil
-}
-
-func parseCommand(cmd string, args interface{}) (Command, error) {
-	if val, ok := args.(string); ok {
-		return Command{
-			Name:  cmd,
-			Lines: []string{val},
-		}, nil
-	} else if list, ok := args.([]interface{}); ok {
-		var lines []string
-		for _, val := range list {
-			if str, ok := val.(string); ok {
-				lines = append(lines, str)
-			} else {
-				return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\". Should be a string or a list of strings")
-			}
-		}
-		return Command{
-			Name:  cmd,
-			Lines: lines,
-		}, nil
-	} else {
-		return Command{}, errors.New("Invalid syntax when parsing \"" + cmd + "\"")
+	// TODO: sanitize task
+	if result.Service == "" {
+		return nil, errors.New("task requires a service")
 	}
+
+	return result, nil
 }

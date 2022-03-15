@@ -3,23 +3,40 @@ version: "3.5"
 services:
 
   rabbitmq:
-    image: rabbitmq:3
+    image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: "rabbitmq"
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
     networks:
       - rabbitmq
+    ports:
+      - 5671:5671
+      - 5672:5672
+      - 15672:15672
 
   mongodb:
-    image: mongo:4
+    build: ./mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: "mongodb"
       MONGO_INITDB_ROOT_PASSWORD: "mongodb"
       MONGO_INITDB_DATABASE: "dips"
-    volumes:
-      - ./mongodb-init.js:/docker-entrypoint-initdb.d/mongodb-init.js:ro
     networks:
+      - mongodb
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "mongodb"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "mongodb"
+      ME_CONFIG_MONGODB_SERVER: "mongodb"
+    networks:
+      - mongodb
+    depends_on:
       - mongodb
 
   influxdb:
@@ -33,17 +50,30 @@ services:
       - influx-data:/var/lib/influxdb
     networks:
       - influx
+    ports:
+      - 8086:8086
+
+  chronograf:
+    image: chronograf:1.8
+    ports:
+      - 8888:8888
+    command: chronograf --influxdb-url=http://influxdb:8086
+    networks:
+      - influx
 
   minio:
     image: minio/minio:latest
     environment:
-      MINIO_ACCESS_KEY: "minio"
-      MINIO_SECRET_KEY: "miniominio"
+      MINIO_ROOT_USER: "minio"
+      MINIO_ROOT_PASSWORD: "miniominio"
     volumes:
       - minio-data:/data
-    command: server /data/minio
+    command: server --console-address :9090 /data/minio
     networks:
       - minio
+    ports:
+      - 9000:9000
+      - 9090:9090
 
 networks:
   rabbitmq: {}

@@ -1,0 +1,13 @@
+---
+name: ffmpeg test pipe
+
+stages:
+- stage: testing conditional execution
+  tasks:
+
+  - service:
+      name: ffmpeg
+      source: minio://minio:miniominio@localhost:9000/input/Big_Buck_Bunny_1080_10s_30MB.mp4
+      target: minio://minio:miniominio@localhost:9000/input/transcoded.mp4
+      args: "-i [Source] [Target]"
+    register: ffmpeg_result
