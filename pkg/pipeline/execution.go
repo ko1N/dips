@@ -100,16 +100,11 @@ func (e *ExecutionContext) Run() error {
 					}
 				}
 
+				e.Tracker.Info("dispatching task", "input", input)
 				result, err := (e.taskHandler)(&task, input)
 				if err != nil {
 					e.Tracker.Error("task execution failed: %s", err)
 					return err
-				}
-
-				// TODO: duistingish between service error and actual execution error
-				if !task.IgnoreErrors && err != nil {
-					e.Tracker.Error("aborting pipeline execution", errors.New("task failed to exit properly ("+err.Error()+")"))
-					return nil
 				}
 
 				// convert result into tengo objects and store it
@@ -133,6 +128,12 @@ func (e *ExecutionContext) Run() error {
 					} else {
 						e.variables[task.Register] = v
 					}
+				}
+
+				// TODO: duistingish between service error and actual execution error
+				if !task.IgnoreErrors && err != nil {
+					e.Tracker.Error("aborting pipeline execution", errors.New("task failed to exit properly ("+err.Error()+")"))
+					return nil
 				}
 			}
 

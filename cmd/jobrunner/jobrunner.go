@@ -72,7 +72,7 @@ func handleJob(job *dipscl.JobContext) error {
 					NewTask(task.Service).
 					Name(task.Name).
 					Job(job.Request.Job).
-					Timeout(10 * time.Second).
+					Timeout(12 * 3600 * time.Second). // TODO: timeout should be configurable
 					Parameters(input).
 					Dispatch().
 					Await()

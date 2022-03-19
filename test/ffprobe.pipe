@@ -12,4 +12,4 @@ stages:
 
   - service:
       name: shell
-      cmd: "echo {{ ffprobe_result.Output.probe.streams[0] }}"
+      cmd: "echo {{ ffprobe_result.output.probe.streams[0] }}"

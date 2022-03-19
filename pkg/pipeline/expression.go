@@ -17,6 +17,13 @@ func (e *Expression) Evaluate(variables map[string]interface{}) (string, error) 
 	src := `out := ` + e.Script
 	script := tengo.NewScript([]byte(src))
 
+	// setup additional helper functions
+	for k, v := range userFunctions {
+		_ = script.Add(k, &tengo.UserFunction{
+			Value: v,
+		})
+	}
+
 	// setup variables
 	for k, v := range variables {
 		_ = script.Add(k, v)
