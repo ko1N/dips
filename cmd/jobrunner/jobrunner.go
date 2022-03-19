@@ -79,6 +79,7 @@ func handleJob(job *dipscl.JobContext) error {
 				if err != nil {
 					if retries > 0 {
 						retries--
+						time.Sleep(1 * time.Second)
 						continue
 					} else {
 						return nil, err

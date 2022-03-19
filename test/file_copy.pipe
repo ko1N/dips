@@ -1,0 +1,11 @@
+---
+name: file copy test pipe
+
+stages:
+- stage: testing in-memory file copy
+  tasks:
+
+  - service:
+      name: file_copy
+      source: "minio://minio:miniominio@localhost:9000/input/cautiousop.mp4"
+      target: "minio://minio:miniominio@localhost:9000/output/cautiousop.mp4"

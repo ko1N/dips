@@ -127,6 +127,7 @@ func (self *DiskFS) Flush() error {
 			if err != nil {
 				return fmt.Errorf("Failed to get reader for file '%s': %s", diskPath, err)
 			}
+			defer reader.Close()
 
 			// write to storage
 			writer, err := storage.GetFileWriter(output)

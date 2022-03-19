@@ -95,7 +95,7 @@ func (e *ExecutionContext) Run() error {
 						return []byte(v)
 					}))
 					if err != nil {
-						e.Tracker.Error("error parsing task input", err)
+						e.Tracker.Error("error parsing task input", "error", err)
 						return err
 					}
 				}
@@ -103,7 +103,7 @@ func (e *ExecutionContext) Run() error {
 				e.Tracker.Info("dispatching task", "input", input)
 				result, err := (e.taskHandler)(&task, input)
 				if err != nil {
-					e.Tracker.Error("task execution failed: %s", err)
+					e.Tracker.Error("task execution failed", "error", err)
 					return err
 				}
 
@@ -132,7 +132,7 @@ func (e *ExecutionContext) Run() error {
 
 				// TODO: duistingish between service error and actual execution error
 				if !task.IgnoreErrors && err != nil {
-					e.Tracker.Error("aborting pipeline execution", errors.New("task failed to exit properly ("+err.Error()+")"))
+					e.Tracker.Error("aborting pipeline execution", "error", errors.New("task failed to exit properly ("+err.Error()+")"))
 					return nil
 				}
 			}
@@ -159,7 +159,7 @@ func (e *ExecutionContext) Run() error {
 
 								result, err := ext.Execute(e, line)
 								if err != nil {
-									e.Tracker.Error("task execution failed", err)
+									e.Tracker.Error("task execution failed", "error", err)
 									return err
 								}
 
