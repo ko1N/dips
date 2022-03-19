@@ -289,6 +289,7 @@ func (worker *TaskWorker) handleRequest(taskRequest *TaskRequest) (map[string]in
 		Filesystem:  fs,
 		Environment: env,
 	})
+	// TODO: log err here!
 
 	// flush all filesystem operations
 	fs.Flush()

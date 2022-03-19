@@ -217,7 +217,9 @@ func ffmpegHandler(conf *FFmpegConfig) func(*dipscl.TaskContext) (map[string]int
 		}
 
 		tracker.Info("ffmpeg-transcode successful")
-		return map[string]interface{}{}, nil
+		return map[string]interface{}{
+			"target": target,
+		}, nil
 	}
 }
 
