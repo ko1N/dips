@@ -1,2 +1,0 @@
-[amqp]
-host="rabbitmq:rabbitmq@localhost"

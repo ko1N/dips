@@ -1,19 +1,18 @@
 package main
 
 import (
-	"flag"
+	"fmt"
+	"io/ioutil"
 	"os"
 
-	"github.com/BurntSushi/toml"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	log "github.com/inconshreveable/log15"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gopkg.in/yaml.v2"
 
 	// swagger generated docs
 	_ "github.com/ko1N/dips/api/manager"
-	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/internal/persistence/database"
 	"github.com/ko1N/dips/internal/persistence/messages"
 	"github.com/ko1N/dips/internal/rest/manager"
@@ -29,28 +28,58 @@ import (
 // generate swagger docs
 //go:generate swag init -g manager.go --parseDependency --output ../../api/manager
 
-type config struct {
-	AMQP     amqp.Config             `json:"amqp" toml:"amqp"`
-	MongoDB  database.MongoDBConfig  `json:"mongodb" toml:"mongodb"`
-	InfluxDB database.InfluxDBConfig `json:"influxdb" toml:"influxdb"`
+type Config struct {
+	Dips     DipsConfig              `yaml:"dips"`
+	MongoDB  database.MongoDBConfig  `yaml:"mongodb"`
+	InfluxDB database.InfluxDBConfig `yaml:"influxdb"`
+}
+
+type DipsConfig struct {
+	Host string `yaml:"host"`
+}
+
+func readConfig(filename string) (*Config, error) {
+	fallback := Config{
+		Dips: DipsConfig{
+			Host: "rabbitmq:rabbitmq@localhost",
+		},
+		MongoDB: database.MongoDBConfig{
+			Hosts:         []string{"mongodb://localhost:27017"},
+			AuthMechanism: "SCRAM-SHA-256",
+			AuthSource:    "dips",
+			Username:      "dips",
+			Password:      "dips",
+			Database:      "dips",
+		},
+		InfluxDB: database.InfluxDBConfig{
+			Host:     "http://localhost:8086",
+			Database: "dips",
+			Username: "dips",
+			Password: "dips",
+		},
+	}
+
+	contents, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return &fallback, nil
+	}
+
+	var conf Config
+	err = yaml.Unmarshal([]byte(contents), &conf)
+	if err != nil {
+		return &fallback, nil
+	}
+	return &conf, nil
 }
 
 func main() {
-	srvlog := log.New("cmd", "manager")
-
-	// parse command line
-	configPtr := flag.String("config", "config.toml", "config file")
-	flag.Parse()
-
-	// parse config
-	var conf config
-	if _, err := toml.DecodeFile(*configPtr, &conf); err != nil {
-		srvlog.Crit("Config file could not be parsed", "error", err)
-		return
+	conf, err := readConfig("config.yml")
+	if err != nil {
+		panic(err)
 	}
 
 	// setup dips client
-	dipscl, err := dipscl.NewClient(conf.AMQP.Host)
+	cl, err := dipscl.NewClient(conf.Dips.Host)
 	if err != nil {
 		panic(err)
 	}
@@ -58,26 +87,15 @@ func main() {
 	// setup database
 	mongo, err := database.MongoDBConnect(&conf.MongoDB)
 	if err != nil {
-		srvlog.Crit("Could not connect to mongodb instances", "error", err)
-		return
+		panic(err)
 	}
 
 	// setup messages
 	// setup logging
 	influxdb, err := database.InfluxDBConnect(&conf.InfluxDB)
 	if err != nil {
-		srvlog.Crit("Could not connect to influxdb instance", "error", err)
-		return
+		panic(err)
 	}
-
-	messageHandler := messages.CreateMessageHandler(influxdb, conf.InfluxDB.Database)
-	/*
-		msg.Message("test", "Hello World 1!")
-		msg.Message("test", "Hello World 2!")
-		msg.Message("test", "Hello World 3!")
-
-		msg.GetAll("test")
-	*/
 
 	// setup web service
 	r := gin.Default()
@@ -88,10 +106,10 @@ func main() {
 	r.Use(cors.New(config))
 
 	// setup manager api
-	_, err = manager.CreateManagerAPI(r, dipscl, mongo, messageHandler)
+	messageHandler := messages.CreateMessageHandler(influxdb, conf.InfluxDB.Database)
+	_, err = manager.CreateManagerAPI(r, cl, mongo, messageHandler)
 	if err != nil {
-		srvlog.Crit("Unable to create Manager API", "error", err)
-		return
+		panic(err)
 	}
 
 	// add swagger documentation on local dev builds
@@ -103,7 +121,7 @@ func main() {
 		}
 		url := ginSwagger.URL("http://localhost:" + port + "/swagger/doc.json")
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
-		srvlog.Info("Swagger setup at: http://localhost:" + port + "/swagger/index.html")
+		fmt.Println("Swagger setup at: http://localhost:" + port + "/swagger/index.html")
 	}
 
 	r.Run()

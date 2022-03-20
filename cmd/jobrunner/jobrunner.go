@@ -2,40 +2,53 @@ package main
 
 import (
 	"errors"
-	"flag"
+	"io/ioutil"
 	"time"
 
-	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/pkg/dipscl"
 	"github.com/ko1N/dips/pkg/execution"
 	"github.com/ko1N/dips/pkg/execution/tracking"
 	"github.com/ko1N/dips/pkg/pipeline"
+	"gopkg.in/yaml.v2"
 
-	"github.com/BurntSushi/toml"
 	log "github.com/inconshreveable/log15"
 )
 
-type config struct {
-	AMQP amqp.Config `json:"amqp" toml:"amqp"`
+type Config struct {
+	Dips DipsConfig `yaml:"dips"`
+}
+
+type DipsConfig struct {
+	Host string `yaml:"host"`
+}
+
+func readConfig(filename string) (*Config, error) {
+	fallback := Config{
+		Dips: DipsConfig{
+			Host: "rabbitmq:rabbitmq@localhost",
+		},
+	}
+
+	contents, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return &fallback, nil
+	}
+
+	var conf Config
+	err = yaml.Unmarshal([]byte(contents), &conf)
+	if err != nil {
+		return &fallback, nil
+	}
+	return &conf, nil
 }
 
 func main() {
-	// create global logger for this instance
-	srvlog := log.New("cmd", "worker")
-
-	// parse command line
-	configPtr := flag.String("config", "config.toml", "config file")
-	flag.Parse()
-
-	// parse config
-	var conf config
-	if _, err := toml.DecodeFile(*configPtr, &conf); err != nil {
-		srvlog.Crit("Config file could not be parsed", "error", err)
-		return
+	conf, err := readConfig("config.yml")
+	if err != nil {
+		panic(err)
 	}
 
-	// setup amqp
-	cl, err := dipscl.NewClient(conf.AMQP.Host)
+	cl, err := dipscl.NewClient(conf.Dips.Host)
 	if err != nil {
 		panic(err)
 	}
