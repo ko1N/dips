@@ -10,12 +10,12 @@ import (
 
 // MongoDBConfig - config entry describing a database config
 type MongoDBConfig struct {
-	Hosts         []string `json:"hosts" toml:"hosts"`
-	AuthMechanism string   `json:"auth_mechanism" toml:"auth_mechanism"`
-	AuthSource    string   `json:"auth_source" toml:"auth_source"`
-	Username      string   `json:"username" toml:"username"`
-	Password      string   `json:"password" toml:"password"`
-	Database      string   `json:"database" toml:"database"`
+	Hosts         []string `json:"hosts" toml:"hosts" yaml:"hosts"`
+	AuthMechanism string   `json:"auth_mechanism" toml:"auth_mechanism" yaml:"auth_mechanism"`
+	AuthSource    string   `json:"auth_source" toml:"auth_source" yaml:"auth_source"`
+	Username      string   `json:"username" toml:"username" yaml:"username"`
+	Password      string   `json:"password" toml:"password" yaml:"password"`
+	Database      string   `json:"database" toml:"database" yaml:"database"`
 }
 
 // MongoDBConnect - opens a connection to mongodb and returns the connection object

@@ -7,10 +7,10 @@ import (
 
 // InfluxDBConfig - config entry describing a influxdb config
 type InfluxDBConfig struct {
-	Host     string `json:"host" toml:"host"`
-	Database string `json:"database" toml:"database"`
-	Username string `json:"username" toml:"username"`
-	Password string `json:"password" toml:"password"`
+	Host     string `json:"host" toml:"host" yaml:"host"`
+	Database string `json:"database" toml:"database" yaml:"database"`
+	Username string `json:"username" toml:"username" yaml:"username"`
+	Password string `json:"password" toml:"password" yaml:"password"`
 }
 
 // InfluxDBConnect - opens a connection to influxdb and returns the connection object
