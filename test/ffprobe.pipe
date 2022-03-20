@@ -1,6 +1,10 @@
 ---
 name: probe test pipe
 
+parameters:
+- input_filename
+- output_filename
+
 stages:
 - stage: testing conditional execution
   tasks:

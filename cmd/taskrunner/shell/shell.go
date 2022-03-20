@@ -2,16 +2,51 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	log "github.com/inconshreveable/log15"
+	"gopkg.in/yaml.v2"
 
 	"github.com/ko1N/dips/pkg/dipscl"
-	"github.com/ko1N/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/execution/tracking"
 )
 
+type Config struct {
+	Dips DipsConfig `yaml:"dips"`
+}
+
+type DipsConfig struct {
+	Host string `yaml:"host"`
+}
+
+func readConfig(filename string) (*Config, error) {
+	fallback := Config{
+		Dips: DipsConfig{
+			Host: "rabbitmq:rabbitmq@localhost",
+		},
+	}
+
+	contents, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return &fallback, nil
+	}
+
+	var conf Config
+	err = yaml.Unmarshal([]byte(contents), &conf)
+	if err != nil {
+		return &fallback, nil
+	}
+	return &conf, nil
+}
+
 func main() {
-	cl, err := dipscl.NewClient("rabbitmq:rabbitmq@localhost")
+	conf, err := readConfig("config.yml")
+	if err != nil {
+		panic(err)
+	}
+
+	cl, err := dipscl.NewClient(conf.Dips.Host)
 	if err != nil {
 		panic(err)
 	}

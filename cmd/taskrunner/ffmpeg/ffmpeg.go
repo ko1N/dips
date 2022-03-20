@@ -5,50 +5,67 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"strings"
 	"text/template"
 
 	log "github.com/inconshreveable/log15"
 	"github.com/jessevdk/go-flags"
+	"gopkg.in/yaml.v2"
 
 	"github.com/ko1N/dips/pkg/dipscl"
-	"github.com/ko1N/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/execution/tracking"
 	"github.com/ko1N/dips/pkg/taskstorage"
 )
 
-// TODO: clientconfig
+type Config struct {
+	Dips   DipsConfig    `yaml:"dips"`
+	FFmpeg *FFmpegConfig `yaml:"ffmpeg"`
+}
+
+type DipsConfig struct {
+	Host string `yaml:"host"`
+}
 
 type FFmpegConfig struct {
 	FFprobeExecutable string `yaml:"ffprobe"`
 	FFmpegExecutable  string `yaml:"ffmpeg"`
 }
 
-/*
-func ReadConfig(filename string) (*Config, error) {
+func readConfig(filename string) (*Config, error) {
+	fallback := Config{
+		Dips: DipsConfig{
+			Host: "rabbitmq:rabbitmq@localhost",
+		},
+		FFmpeg: &FFmpegConfig{
+			FFprobeExecutable: "/usr/bin/ffprobe",
+			FFmpegExecutable:  "/usr/bin/ffmpeg",
+		},
+	}
+
 	contents, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return &fallback, nil
 	}
 
 	var conf Config
 	err = yaml.Unmarshal([]byte(contents), &conf)
 	if err != nil {
-		return nil, err
+		return &fallback, nil
 	}
 	return &conf, nil
 }
-*/
 
 func main() {
-	cl, err := dipscl.NewClient("rabbitmq:rabbitmq@localhost")
+	conf, err := readConfig("config.yml")
 	if err != nil {
 		panic(err)
 	}
 
-	ffmpegConf := FFmpegConfig{
-		FFprobeExecutable: "/usr/bin/ffprobe",
-		FFmpegExecutable:  "/usr/bin/ffmpeg",
+	cl, err := dipscl.NewClient(conf.Dips.Host)
+	if err != nil {
+		panic(err)
 	}
 
 	cl.
@@ -57,7 +74,7 @@ func main() {
 		Concurrency(10).
 		//Environment("shell").
 		Filesystem("disk").
-		Handler(ffprobeHandler(&ffmpegConf)).
+		Handler(ffprobeHandler(conf.FFmpeg)).
 		Run()
 
 	cl.
@@ -66,7 +83,7 @@ func main() {
 		Concurrency(10).
 		//Environment("shell").
 		Filesystem("disk").
-		Handler(ffmpegHandler(&ffmpegConf)).
+		Handler(ffmpegHandler(conf.FFmpeg)).
 		Run()
 
 	fmt.Println("ffmpeg worker started")

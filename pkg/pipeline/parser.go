@@ -33,8 +33,9 @@ type Stage struct {
 
 // Pipeline -
 type Pipeline struct {
-	Name   string  `json:"name" bson:"name"`
-	Stages []Stage `json:"stages" bson:"stages"`
+	Name       string   `json:"name" bson:"name"`
+	Parameters []string `json:"parameters" bson:"parameters"`
+	Stages     []Stage  `json:"stages" bson:"stages"`
 }
 
 // CreateFromBytes - loads a new pipeline instance from a byte array
@@ -62,6 +63,12 @@ func parsePipeline(script map[interface{}]interface{}) (*Pipeline, error) {
 
 	if name, ok := script["name"]; ok {
 		result.Name = name.(string)
+	}
+
+	if parameters, ok := script["parameters"]; ok {
+		for _, p := range parameters.([]interface{}) {
+			result.Parameters = append(result.Parameters, p.(string))
+		}
 	}
 
 	if stages, ok := script["stages"]; ok {

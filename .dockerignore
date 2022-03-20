@@ -1,0 +1,4 @@
+.git
+cmd/taskrunner/ffmpeg/temp/
+cmd/taskrunner/file_copy/temp/
+cmd/taskrunner/shell/temp/

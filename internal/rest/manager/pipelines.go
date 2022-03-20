@@ -55,6 +55,7 @@ func (a *ManagerAPI) PipelineCreate(c *gin.Context) {
 		Revision: 0,
 		Name:     pi.Name,
 		Script:   string(body),
+		Pipeline: pi,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
@@ -257,6 +258,7 @@ func (a *ManagerAPI) PipelineUpdate(c *gin.Context) {
 		pipe.Revision = pipe.Revision + 1
 		pipe.Name = pi.Name
 		pipe.Script = string(body)
+		pipe.Pipeline = pi
 
 		_, err := a.mongo.
 			Collection(colPipeline).

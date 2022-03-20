@@ -28,6 +28,9 @@ func (c *Client) NewJob() *Job {
 // Job - Sets the job
 func (j *Job) Job(job *model.Job) *Job {
 	j.job = job
+	if j.variables == nil {
+		j.variables = job.Variables
+	}
 	return j
 }
 

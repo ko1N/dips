@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,8 +14,8 @@ import (
 
 // PipelineExecuteRequest - Request Body when executing a pipeline
 type PipelineExecuteRequest struct {
-	Name      string                 `json:"name"`
-	Variables map[string]interface{} `json:"variables"`
+	Name       string                 `json:"name"`
+	Parameters map[string]interface{} `json:"parameters"`
 }
 
 // PipelineExecuteResponse - Response when a pipeline was started
@@ -88,10 +89,13 @@ func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("params: %+v", request.Parameters)
+
 	// create the job in the database
+	// input parameters are mapped to variables here
 	job := model.Job{
 		Name:      request.Name,
-		Variables: request.Variables,
+		Variables: request.Parameters,
 		Pipeline:  &pipeline,
 	}
 

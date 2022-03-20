@@ -4,7 +4,7 @@ package manager
 
 import "github.com/swaggo/swag"
 
-const docTemplate_swagger = `{
+const docTemplate = `{
     "schemes": {{ marshal .Schemes }},
     "swagger": "2.0",
     "info": {
@@ -376,7 +376,7 @@ const docTemplate_swagger = `{
                 "name": {
                     "type": "string"
                 },
-                "variables": {
+                "parameters": {
                     "type": "object",
                     "additionalProperties": true
                 }
@@ -447,6 +447,9 @@ const docTemplate_swagger = `{
                 "name": {
                     "type": "string"
                 },
+                "pipeline": {
+                    "$ref": "#/definitions/pipeline.Pipeline"
+                },
                 "revision": {
                     "type": "integer"
                 },
@@ -454,12 +457,85 @@ const docTemplate_swagger = `{
                     "type": "string"
                 }
             }
+        },
+        "pipeline.Expression": {
+            "type": "object",
+            "properties": {
+                "script": {
+                    "type": "string"
+                }
+            }
+        },
+        "pipeline.Pipeline": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "stages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pipeline.Stage"
+                    }
+                }
+            }
+        },
+        "pipeline.Stage": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pipeline.Task"
+                    }
+                }
+            }
+        },
+        "pipeline.Task": {
+            "type": "object",
+            "properties": {
+                "ignore_errors": {
+                    "type": "boolean"
+                },
+                "input": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notify": {
+                    "description": "NotifyRef",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "register": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "when": {
+                    "$ref": "#/definitions/pipeline.Expression"
+                }
+            }
         }
     }
 }`
 
-// SwaggerInfo_swagger holds exported Swagger Info so clients can modify it
-var SwaggerInfo_swagger = &swag.Spec{
+// SwaggerInfo holds exported Swagger Info so clients can modify it
+var SwaggerInfo = &swag.Spec{
 	Version:          "0.1",
 	Host:             "",
 	BasePath:         "/",
@@ -467,9 +543,9 @@ var SwaggerInfo_swagger = &swag.Spec{
 	Title:            "dips",
 	Description:      "dips manager api",
 	InfoInstanceName: "swagger",
-	SwaggerTemplate:  docTemplate_swagger,
+	SwaggerTemplate:  docTemplate,
 }
 
 func init() {
-	swag.Register(SwaggerInfo_swagger.InstanceName(), SwaggerInfo_swagger)
+	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
 }

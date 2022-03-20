@@ -291,8 +291,10 @@ func (worker *TaskWorker) handleRequest(taskRequest *TaskRequest) (map[string]in
 	})
 	// TODO: log err here!
 
-	// flush all filesystem operations
-	fs.Flush()
+	// flush all filesystem operations (only in case no error was observed)
+	if err != nil {
+		fs.Flush()
+	}
 
 	// return task result
 	return result, err

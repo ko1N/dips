@@ -368,7 +368,7 @@
                 "name": {
                     "type": "string"
                 },
-                "variables": {
+                "parameters": {
                     "type": "object",
                     "additionalProperties": true
                 }
@@ -439,11 +439,87 @@
                 "name": {
                     "type": "string"
                 },
+                "pipeline": {
+                    "$ref": "#/definitions/pipeline.Pipeline"
+                },
                 "revision": {
                     "type": "integer"
                 },
                 "script": {
                     "type": "string"
+                }
+            }
+        },
+        "pipeline.Expression": {
+            "type": "object",
+            "properties": {
+                "script": {
+                    "type": "string"
+                }
+            }
+        },
+        "pipeline.Pipeline": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "stages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pipeline.Stage"
+                    }
+                }
+            }
+        },
+        "pipeline.Stage": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pipeline.Task"
+                    }
+                }
+            }
+        },
+        "pipeline.Task": {
+            "type": "object",
+            "properties": {
+                "ignore_errors": {
+                    "type": "boolean"
+                },
+                "input": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notify": {
+                    "description": "NotifyRef",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "register": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "when": {
+                    "$ref": "#/definitions/pipeline.Expression"
                 }
             }
         }

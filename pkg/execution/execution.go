@@ -1,4 +1,4 @@
-package pipeline
+package execution
 
 import (
 	"errors"
@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	"github.com/d5/tengo/v2"
-	"github.com/ko1N/dips/pkg/pipeline/tracking"
+	"github.com/ko1N/dips/pkg/execution/tracking"
+	"github.com/ko1N/dips/pkg/pipeline"
 )
 
 // ExecutionContext - context for a execution
 type ExecutionContext struct {
 	JobID       string
-	Pipeline    *Pipeline
+	Pipeline    *pipeline.Pipeline
 	Tracker     tracking.JobTracker
 	variables   map[string]interface{}
-	taskHandler func(*Task, map[string]string) (*ExecutionResult, error)
+	taskHandler func(*pipeline.Task, map[string]string) (*ExecutionResult, error)
 }
 
 type ExecutionResult struct {
@@ -25,7 +26,7 @@ type ExecutionResult struct {
 	Output  map[string]interface{} `json:"output" bson:"output"`
 }
 
-func NewExecutionContext(jobID string, pipeline *Pipeline, tracker tracking.JobTracker) *ExecutionContext {
+func NewExecutionContext(jobID string, pipeline *pipeline.Pipeline, tracker tracking.JobTracker) *ExecutionContext {
 	return &ExecutionContext{
 		JobID:     jobID,
 		Pipeline:  pipeline,
@@ -42,7 +43,7 @@ func (e *ExecutionContext) Variables(variables map[string]interface{}) *Executio
 }
 
 // Handler - Sets the handler for this worker
-func (e *ExecutionContext) TaskHandler(handler func(*Task, map[string]string) (*ExecutionResult, error)) *ExecutionContext {
+func (e *ExecutionContext) TaskHandler(handler func(*pipeline.Task, map[string]string) (*ExecutionResult, error)) *ExecutionContext {
 	// TODO: multiple handlers
 	e.taskHandler = handler
 	return e
@@ -91,7 +92,7 @@ func (e *ExecutionContext) Run() error {
 					input[key] = string(expression.ReplaceAllFunc([]byte(value.(string)), func(m []byte) []byte {
 						t := strings.TrimSpace(string(m[2 : len(m)-2]))
 						var v string
-						v, err = (&Expression{Script: string(t)}).Evaluate(e.variables)
+						v, err = (&pipeline.Expression{Script: string(t)}).Evaluate(e.variables)
 						return []byte(v)
 					}))
 					if err != nil {

@@ -1,6 +1,9 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"github.com/ko1N/dips/pkg/pipeline"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 // TODO: properties struct
 // TODO: task struct should contain all necessary infos + unique ids
@@ -11,5 +14,5 @@ type Pipeline struct {
 	Revision uint                `json:"revision" bson:"revision"`
 	Name     string              `json:"name" bson:"name" required:"true"`
 	Script   string              `json:"script" bson:"script"`
-	// TODO: properties
+	Pipeline *pipeline.Pipeline  `json:"pipeline" bson:"pipeline"`
 }

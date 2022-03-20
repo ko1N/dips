@@ -7,8 +7,9 @@ import (
 
 	"github.com/ko1N/dips/internal/amqp"
 	"github.com/ko1N/dips/pkg/dipscl"
+	"github.com/ko1N/dips/pkg/execution"
+	"github.com/ko1N/dips/pkg/execution/tracking"
 	"github.com/ko1N/dips/pkg/pipeline"
-	"github.com/ko1N/dips/pkg/pipeline/tracking"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/inconshreveable/log15"
@@ -62,10 +63,10 @@ func handleJob(job *dipscl.JobContext) error {
 	}
 
 	// execute pipeline on engine
-	exec := pipeline.
+	exec := execution.
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
 		Variables(job.Request.Variables).
-		TaskHandler(func(task *pipeline.Task, input map[string]string) (*pipeline.ExecutionResult, error) {
+		TaskHandler(func(task *pipeline.Task, input map[string]string) (*execution.ExecutionResult, error) {
 			retries := 3
 			for {
 				result, err := job.Client.
@@ -85,7 +86,7 @@ func handleJob(job *dipscl.JobContext) error {
 						return nil, err
 					}
 				}
-				return &pipeline.ExecutionResult{
+				return &execution.ExecutionResult{
 					Success: result.Error == nil,
 					Error:   result.Error,
 					Output:  result.Output,

@@ -39,7 +39,7 @@ definitions:
     properties:
       name:
         type: string
-      variables:
+      parameters:
         additionalProperties: true
         type: object
     type: object
@@ -85,10 +85,60 @@ definitions:
         type: string
       name:
         type: string
+      pipeline:
+        $ref: '#/definitions/pipeline.Pipeline'
       revision:
         type: integer
       script:
         type: string
+    type: object
+  pipeline.Expression:
+    properties:
+      script:
+        type: string
+    type: object
+  pipeline.Pipeline:
+    properties:
+      name:
+        type: string
+      parameters:
+        items:
+          type: string
+        type: array
+      stages:
+        items:
+          $ref: '#/definitions/pipeline.Stage'
+        type: array
+    type: object
+  pipeline.Stage:
+    properties:
+      name:
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/pipeline.Task'
+        type: array
+    type: object
+  pipeline.Task:
+    properties:
+      ignore_errors:
+        type: boolean
+      input:
+        additionalProperties: true
+        type: object
+      name:
+        type: string
+      notify:
+        description: NotifyRef
+        items:
+          type: string
+        type: array
+      register:
+        type: string
+      service:
+        type: string
+      when:
+        $ref: '#/definitions/pipeline.Expression'
     type: object
 info:
   contact: {}
