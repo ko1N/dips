@@ -65,7 +65,7 @@ func handleJob(job *dipscl.JobContext) error {
 	// execute pipeline on engine
 	exec := execution.
 		NewExecutionContext(job.Request.Job.Id.Hex(), pi, tracker).
-		Variables(job.Request.Variables).
+		Variables(job.Request.Job.Variables).
 		TaskHandler(func(task *pipeline.Task, input map[string]string) (*execution.ExecutionResult, error) {
 			retries := 3
 			for {

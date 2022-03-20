@@ -9,14 +9,12 @@ import (
 )
 
 type Job struct {
-	jobQueue  (chan amqp.Message)
-	job       *model.Job
-	variables map[string]interface{}
+	jobQueue (chan amqp.Message)
+	job      *model.Job
 }
 
 type JobRequest struct {
-	Job       *model.Job             `json:"job"`
-	Variables map[string]interface{} `json:"variables"`
+	Job *model.Job `json:"job"`
 }
 
 func (c *Client) NewJob() *Job {
@@ -28,9 +26,6 @@ func (c *Client) NewJob() *Job {
 // Job - Sets the job
 func (j *Job) Job(job *model.Job) *Job {
 	j.job = job
-	if j.variables == nil {
-		j.variables = job.Variables
-	}
 	return j
 }
 
@@ -43,6 +38,9 @@ func (j *Job) Name(name string) *Job {
 }
 
 func (j *Job) Pipeline(script string) *Job {
+	if j.job == nil {
+		j.job = &model.Job{}
+	}
 	if j.job.Pipeline == nil {
 		j.job.Pipeline = &model.Pipeline{}
 	}
@@ -52,15 +50,17 @@ func (j *Job) Pipeline(script string) *Job {
 
 // Parameters - Sets the input parameters of the job
 func (j *Job) Variables(variables map[string]interface{}) *Job {
-	j.variables = variables
+	if j.job == nil {
+		j.job = &model.Job{}
+	}
+	j.job.Variables = variables
 	return j
 }
 
 // Dispatches the job (and never blocks)
 func (j *Job) Dispatch() {
 	jobRequest := JobRequest{
-		Job:       j.job,
-		Variables: j.variables,
+		Job: j.job,
 	}
 	if jobRequest.Job.Id == nil {
 		id := primitive.NewObjectID()

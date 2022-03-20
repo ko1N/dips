@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -88,8 +87,6 @@ func (a *ManagerAPI) PipelineExecute(c *gin.Context) {
 		})
 		return
 	}
-
-	fmt.Println("params: %+v", request.Parameters)
 
 	// create the job in the database
 	// input parameters are mapped to variables here
